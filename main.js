@@ -312,9 +312,9 @@ window.onload = function() {
             // canvas 描画
             sprite.image.context.fillStyle = "white";
             sprite.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
-            sprite.image.context.lineWidth=4;
-            sprite.image.context.strokeStyle = "black";
-            sprite.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+//            sprite.image.context.lineWidth=4;
+//            sprite.image.context.strokeStyle = "black";
+//            sprite.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
 
             scene.addChild(sprite);
             sprite.x=i*SPRITE_WIDTH;
@@ -324,8 +324,7 @@ window.onload = function() {
             sprite.addEventListener('touchstart',function(){
                 this.image.context.fillStyle = "blue";
                 this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
-                this.image.context.strokeStyle = "black";
-                this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+                //this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             	game.assets[this.sepath].clone().play();
                 label.text=this.otoname;
                 console.log(this.otoname);
@@ -334,8 +333,7 @@ window.onload = function() {
             sprite.addEventListener('touchend',function(){
                 this.image.context.fillStyle = "white";
                 this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
-                this.image.context.strokeStyle = "black";
-                this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+                //this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             });
         }
         for(var i=0;i<7;i++){
