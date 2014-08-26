@@ -307,7 +307,7 @@ window.onload = function() {
 
         for(var i=0;i<8;i++){
             sprite=sprites[sprites.name[i]];
-            sprite.image = new Surface(SPRITE_WIDTH*1.2, SPRITE_HEIGHT*1.2);
+            sprite.image = new Surface(SPRITE_WIDTH+1, SPRITE_HEIGHT+1);
             // canvas 描画
             sprite.image.context.fillStyle = "white";
             sprite.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
