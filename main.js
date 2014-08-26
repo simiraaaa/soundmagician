@@ -297,20 +297,9 @@ window.onload = function() {
             namej:["ド↓","レ","ミ","ファ","ソ","ラ","シ","ド↑"],
             namesj:["ド♯","レ♯","","ファ♯","ソ♯","ラ♯"]
         };
-	    var surface = new Surface(SPRITE_WIDTH, SPRITE_HEIGHT);	// サーフェス生成白けん
-	    var surfacek = new Surface(SPRITE_WIDTH, ~~SPRITE_HEIGHT/2);	// 黒
 
 
-        // canvas 描画
-        surface.context.fillStyle = "white";
-        surface.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
-        surface.context.lineWidth=4;
-        surface.context.strokeStyle = "black";
-        surface.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
 
-        // canvas 描画
-        surfacek.context.fillStyle = "black";
-        surfacek.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
 
         //どこ押したかラベル
 	    var label = new Label("Touch!");scene.addChild(label);
@@ -318,31 +307,61 @@ window.onload = function() {
 
         for(var i=0;i<8;i++){
             sprite=sprites[sprites.name[i]];
-            sprite.image = surface;	// サーフェスを画像としてセット
+            sprite.image = new Surface(SPRITE_WIDTH, SPRITE_HEIGHT);	// サーフェス生成白けん
+
+            // canvas 描画
+            sprite.image.context.fillStyle = "white";
+            sprite.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+            sprite.image.context.lineWidth=4;
+            sprite.image.context.strokeStyle = "black";
+            sprite.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+
             scene.addChild(sprite);
             sprite.x=i*SPRITE_WIDTH;
             sprite.y=SPRITE_HEIGHT*2;
             sprite.otoname=sprites.namej[i];
             sprite.sepath=SE_PATH[sprites.name[i]];
             sprite.addEventListener('touchstart',function(){
-            	//game.assets[this.sepath].clone().play();
+                this.image.context.fillStyle = "blue";
+                this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+                this.image.context.strokeStyle = "black";
+                this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+            	game.assets[this.sepath].clone().play();
                 label.text=this.otoname;
                 console.log(this.otoname);
+            });
+
+            sprite.addEventListener('touchend',function(){
+                this.image.context.fillStyle = "white";
+                this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+                this.image.context.strokeStyle = "black";
+                this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             });
         }
         for(var i=0;i<7;i++){
             if(sprites.names[i]){
                 sprite=sprites[sprites.names[i]];
-                sprite.image = surfacek;	// サーフェスを画像としてセット
+                sprite.image =  new Surface(SPRITE_WIDTH, ~~SPRITE_HEIGHT/2);	// 黒
+
+                // canvas 描画
+                sprite.image.context.fillStyle = "black";
+                sprite.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
+
                 scene.addChild(sprite);
                 sprite.x=i*SPRITE_WIDTH+SPRITE_WIDTH/2;
                 sprite.y=SPRITE_HEIGHT*2;
                 sprite.otoname=sprites.namesj[i];
                 sprite.sepath=SE_PATH[sprites.names[i]];
                 sprite.addEventListener('touchstart',function(){
-                	//game.assets[this.sepath].clone().play();
+                	this.image.context.fillStyle="teal";
+                	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
+                	game.assets[this.sepath].clone().play();
                     label.text=this.otoname;
                     console.log(this.otoname);
+                });
+                sprite.addEventListener('touchend',function(){
+                	this.image.context.fillStyle="black";
+                	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
                 });
             }
         }
