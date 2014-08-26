@@ -258,22 +258,22 @@ window.onload = function() {
     game.onload = function() {
 	var scene = game.rootScene;
 	scene.backgroundColor = "aqua";
-//
-//	var SE_PATH={
-//			do1:"piano/do1.mp3",
-//			do1s:"piano/do1s.mp3",
-//			re:"piano/re.mp3",
-//			res:"piano/res.mp3",
-//			mi:"piano/mi.mp3",
-//			fa:"piano/fa.mp3",
-//			fas:"piano/fas.mp3",
-//			so:"piano/so.mp3",
-//			sos:"piano/sos.mp3",
-//			ra:"piano/ra.mp3",
-//			ras:"piano/ras.mp3",
-//			si:"piano/si.mp3",
-//			do2:"piano/do2.mp3",
-//	};
+
+	var SE_PATH={
+			do1:"piano/do1.mp3",
+			do1s:"piano/do1s.mp3",
+			re:"piano/re.mp3",
+			res:"piano/res.mp3",
+			mi:"piano/mi.mp3",
+			fa:"piano/fa.mp3",
+			fas:"piano/fas.mp3",
+			so:"piano/so.mp3",
+			sos:"piano/sos.mp3",
+			ra:"piano/ra.mp3",
+			ras:"piano/ras.mp3",
+			si:"piano/si.mp3",
+			do2:"piano/do2.mp3",
+	};
 
 
 
@@ -303,7 +303,7 @@ window.onload = function() {
 
         //どこ押したかラベル
 	    var label = new Label("Touch!");scene.addChild(label);
-	    //label.x=160;label.y=100;label.fontsize=50;
+	    label.x=160;label.y=60;label.fontsize=50;
 
         for(var i=0;i<8;i++){
             sprite=sprites[sprites.name[i]];
@@ -320,13 +320,13 @@ window.onload = function() {
             sprite.x=i*SPRITE_WIDTH;
             sprite.y=SPRITE_HEIGHT*2;
             sprite.otoname=sprites.namej[i];
-            //sprite.sepath=SE_PATH[sprites.name[i]];
+            sprite.sepath=SE_PATH[sprites.name[i]];
             sprite.addEventListener('touchstart',function(){
                 this.image.context.fillStyle = "blue";
                 this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
                 this.image.context.strokeStyle = "black";
                 this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
-            	//game.assets[this.sepath].clone().play();
+            	game.assets[this.sepath].clone().play();
                 label.text=this.otoname;
                 console.log(this.otoname);
             });
@@ -338,33 +338,33 @@ window.onload = function() {
                 this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             });
         }
-//        for(var i=0;i<7;i++){
-//            if(sprites.names[i]){
-//                sprite=sprites[sprites.names[i]];
-//                sprite.image =  new Surface(SPRITE_WIDTH, ~~SPRITE_HEIGHT/2);	// 黒
-//
-//                // canvas 描画
-//                sprite.image.context.fillStyle = "black";
-//                sprite.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
-//
-//                scene.addChild(sprite);
-//                sprite.x=i*SPRITE_WIDTH+SPRITE_WIDTH/2;
-//                sprite.y=SPRITE_HEIGHT*2;
-//                sprite.otoname=sprites.namesj[i];
-//                sprite.sepath=SE_PATH[sprites.names[i]];
-//                sprite.addEventListener('touchstart',function(){
-//                	this.image.context.fillStyle="teal";
-//                	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
-//                	game.assets[this.sepath].clone().play();
-//                    label.text=this.otoname;
-//                    console.log(this.otoname);
-//                });
-//                sprite.addEventListener('touchend',function(){
-//                	this.image.context.fillStyle="black";
-//                	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
-//                });
-//            }
-//        }
+        for(var i=0;i<7;i++){
+            if(sprites.names[i]){
+                sprite=sprites[sprites.names[i]];
+                sprite.image =  new Surface(SPRITE_WIDTH, ~~SPRITE_HEIGHT/2);	// 黒
+
+                // canvas 描画
+                sprite.image.context.fillStyle = "black";
+                sprite.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
+
+                scene.addChild(sprite);
+                sprite.x=i*SPRITE_WIDTH+SPRITE_WIDTH/2;
+                sprite.y=SPRITE_HEIGHT*2;
+                sprite.otoname=sprites.namesj[i];
+                sprite.sepath=SE_PATH[sprites.names[i]];
+                sprite.addEventListener('touchstart',function(){
+                	this.image.context.fillStyle="teal";
+                	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
+                	game.assets[this.sepath].clone().play();
+                    label.text=this.otoname;
+                    console.log(this.otoname);
+                });
+                sprite.addEventListener('touchend',function(){
+                	this.image.context.fillStyle="black";
+                	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
+                });
+            }
+        }
     };
 
     game.start();
