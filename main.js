@@ -307,14 +307,13 @@ window.onload = function() {
 
         for(var i=0;i<8;i++){
             sprite=sprites[sprites.name[i]];
-            sprite.image = new Surface(SPRITE_WIDTH, SPRITE_HEIGHT);	// サーフェス生成白けん
-
+            sprite.image = new Surface(SPRITE_WIDTH*1.2, SPRITE_HEIGHT*1.2);
             // canvas 描画
             sprite.image.context.fillStyle = "white";
             sprite.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
-//            sprite.image.context.lineWidth=4;
-//            sprite.image.context.strokeStyle = "black";
-//            sprite.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+            sprite.image.context.lineWidth=4;
+            sprite.image.context.strokeStyle = "black";
+            sprite.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
 
             scene.addChild(sprite);
             sprite.x=i*SPRITE_WIDTH;
@@ -324,7 +323,7 @@ window.onload = function() {
             sprite.addEventListener('touchstart',function(){
                 this.image.context.fillStyle = "blue";
                 this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
-                //this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+                this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             	game.assets[this.sepath].clone().play();
                 label.text=this.otoname;
                 console.log(this.otoname);
@@ -333,13 +332,13 @@ window.onload = function() {
             sprite.addEventListener('touchend',function(){
                 this.image.context.fillStyle = "white";
                 this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
-                //this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+                this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             });
         }
         for(var i=0;i<7;i++){
             if(sprites.names[i]){
                 sprite=sprites[sprites.names[i]];
-                sprite.image =  new Surface(SPRITE_WIDTH, ~~SPRITE_HEIGHT/2);	// 黒
+                sprite.image =  new Surface(SPRITE_WIDTH, ~~SPRITE_HEIGHT/2);
 
                 // canvas 描画
                 sprite.image.context.fillStyle = "black";
