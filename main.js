@@ -257,23 +257,23 @@ window.onload = function() {
 		"piano/do2.mp3");
     game.onload = function() {
 	var scene = game.rootScene;
-	//scene.backgroundColor = "aqua";
-
-	var SE_PATH={
-			do1:"piano/do1.mp3",
-			do1s:"piano/do1s.mp3",
-			re:"piano/re.mp3",
-			res:"piano/res.mp3",
-			mi:"piano/mi.mp3",
-			fa:"piano/fa.mp3",
-			fas:"piano/fas.mp3",
-			so:"piano/so.mp3",
-			sos:"piano/sos.mp3",
-			ra:"piano/ra.mp3",
-			ras:"piano/ras.mp3",
-			si:"piano/si.mp3",
-			do2:"piano/do2.mp3",
-	};
+	scene.backgroundColor = "aqua";
+//
+//	var SE_PATH={
+//			do1:"piano/do1.mp3",
+//			do1s:"piano/do1s.mp3",
+//			re:"piano/re.mp3",
+//			res:"piano/res.mp3",
+//			mi:"piano/mi.mp3",
+//			fa:"piano/fa.mp3",
+//			fas:"piano/fas.mp3",
+//			so:"piano/so.mp3",
+//			sos:"piano/sos.mp3",
+//			ra:"piano/ra.mp3",
+//			ras:"piano/ras.mp3",
+//			si:"piano/si.mp3",
+//			do2:"piano/do2.mp3",
+//	};
 
 
 
@@ -320,13 +320,13 @@ window.onload = function() {
             sprite.x=i*SPRITE_WIDTH;
             sprite.y=SPRITE_HEIGHT*2;
             sprite.otoname=sprites.namej[i];
-            sprite.sepath=SE_PATH[sprites.name[i]];
+            //sprite.sepath=SE_PATH[sprites.name[i]];
             sprite.addEventListener('touchstart',function(){
                 this.image.context.fillStyle = "blue";
                 this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
                 this.image.context.strokeStyle = "black";
                 this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
-            	game.assets[this.sepath].clone().play();
+            	//game.assets[this.sepath].clone().play();
                 label.text=this.otoname;
                 console.log(this.otoname);
             });
