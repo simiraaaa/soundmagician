@@ -344,6 +344,6 @@ window.onload = function() {
             }
         }
     };
-
+//test
     game.start();
 };
