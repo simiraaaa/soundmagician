@@ -257,7 +257,7 @@ window.onload = function() {
 		"piano/do2.mp3");
     game.onload = function() {
 	var scene = game.rootScene;
-	scene.backgroundColor = "aqua";
+	//scene.backgroundColor = "aqua";
 
 	var SE_PATH={
 			do1:"piano/do1.mp3",
@@ -338,33 +338,33 @@ window.onload = function() {
                 this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             });
         }
-        for(var i=0;i<7;i++){
-            if(sprites.names[i]){
-                sprite=sprites[sprites.names[i]];
-                sprite.image =  new Surface(SPRITE_WIDTH, ~~SPRITE_HEIGHT/2);	// 黒
-
-                // canvas 描画
-                sprite.image.context.fillStyle = "black";
-                sprite.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
-
-                scene.addChild(sprite);
-                sprite.x=i*SPRITE_WIDTH+SPRITE_WIDTH/2;
-                sprite.y=SPRITE_HEIGHT*2;
-                sprite.otoname=sprites.namesj[i];
-                sprite.sepath=SE_PATH[sprites.names[i]];
-                sprite.addEventListener('touchstart',function(){
-                	this.image.context.fillStyle="teal";
-                	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
-                	game.assets[this.sepath].clone().play();
-                    label.text=this.otoname;
-                    console.log(this.otoname);
-                });
-                sprite.addEventListener('touchend',function(){
-                	this.image.context.fillStyle="black";
-                	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
-                });
-            }
-        }
+//        for(var i=0;i<7;i++){
+//            if(sprites.names[i]){
+//                sprite=sprites[sprites.names[i]];
+//                sprite.image =  new Surface(SPRITE_WIDTH, ~~SPRITE_HEIGHT/2);	// 黒
+//
+//                // canvas 描画
+//                sprite.image.context.fillStyle = "black";
+//                sprite.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
+//
+//                scene.addChild(sprite);
+//                sprite.x=i*SPRITE_WIDTH+SPRITE_WIDTH/2;
+//                sprite.y=SPRITE_HEIGHT*2;
+//                sprite.otoname=sprites.namesj[i];
+//                sprite.sepath=SE_PATH[sprites.names[i]];
+//                sprite.addEventListener('touchstart',function(){
+//                	this.image.context.fillStyle="teal";
+//                	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
+//                	game.assets[this.sepath].clone().play();
+//                    label.text=this.otoname;
+//                    console.log(this.otoname);
+//                });
+//                sprite.addEventListener('touchend',function(){
+//                	this.image.context.fillStyle="black";
+//                	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
+//                });
+//            }
+//        }
     };
 
     game.start();
