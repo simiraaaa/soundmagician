@@ -260,7 +260,7 @@ var TitleScene = function(){
 
     player=Player();
 	player.setPosition(10,10);
-	map=new ExMap(16,16);
+	map=new Map(16,16);
 	map.image=game.assets["images/map1.png"];
 	map.loadData([
 	    [39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39,39],
