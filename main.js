@@ -422,20 +422,7 @@ var TitleScene = function(){
 	s.addChild(player);
     Grouping(s,[map,player]);
 
-    s.miniken=new Sprite(30,30);
-    s.miniken.image=new Surface(30,30);
-    for(var i=0;i<3;i++){
-    	s.miniken.image.context.fillStyle="white";
-    	s.miniken.image.context.fillRect(i*9,0,9,29);
-    	s.miniken.image.context.strokeRect(i*9,0,9,29);
-    }
-    for(var i=0;i<2;i++){
-    	s.miniken.image.context.fillStyle="black";
-    	s.miniken.image.context.fillRect(i*9+5,0,7,15);
-    }
-    s.miniken.x=30;
-    s.miniken.y=30;
-    s.addChild(s.miniken);
+    FieldAdd(s);
     TouchCtrl(s);
     s.onenterframe=function(){
     	if(game.input.touch.leftupstart)game.pushScene(PianoScene());
@@ -504,16 +491,16 @@ var Player = enchant.Class.create(Sprite, {
     },
     onenterframe : function(){
         var input = { x:0, y:0, d:this.direction };
-        if (game.input.up || game.input.touch.up) {
+        if (game.input.up ) {
             input.d = this.control ? 3 : 0;
             input.y = this.control ?-1 : 1;
-        } else if (game.input.down|| game.input.touch.down) {
+        } else if (game.input.down) {
             input.d = this.control ? 0 : 3;
             input.y = this.control ? 1 :-1;
-        } else if (game.input.left|| game.input.touch.left) {
+        } else if (game.input.left) {
             input.d = this.control ? 1 : 2;
             input.x = this.control ? -1: 1;
-        } else if (game.input.right|| game.input.touch.right) {
+        } else if (game.input.right) {
             input.d = this.control ? 2 : 1;
             input.x = this.control ? 1 :-1;
         }
@@ -743,6 +730,28 @@ var TouchCtrl=function(s){
 	s.on('touchend',function(){
 		game.input.touch={};
 	});
+}
+
+//フィールドのシーンに追加するような奴
+var FieldAdd=function(s){
+	var pad = new Pad();
+    pad.x = 5;
+    pad.y = 215;
+    s.addChild(pad);
+    s.miniken=new Sprite(30,30);
+    s.miniken.image=new Surface(30,30);
+    for(var i=0;i<3;i++){
+    	s.miniken.image.context.fillStyle="white";
+    	s.miniken.image.context.fillRect(i*9,0,9,29);
+    	s.miniken.image.context.strokeRect(i*9,0,9,29);
+    }
+    for(var i=0;i<2;i++){
+    	s.miniken.image.context.fillStyle="black";
+    	s.miniken.image.context.fillRect(i*9+5,0,7,15);
+    }
+    s.miniken.x=30;
+    s.miniken.y=30;
+    s.addChild(s.miniken);
 }
 
 
