@@ -418,8 +418,6 @@ var TitleScene = function(){
 	                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1]
 	                    ];
 
-    s.addChild(map);
-	s.addChild(player);
     Grouping(s,[map,player]);
 
     FieldAdd(s);
@@ -752,7 +750,23 @@ var FieldAdd=function(s){
     s.miniken.x=30;
     s.miniken.y=30;
     s.addChild(s.miniken);
-}
+};
+
+//角丸
+var RoundRect= function(canvas, x, y, width, height, radius, isFill) {
+    var l = x + radius;
+    var r = x + width - radius;
+    var t = y + radius;
+    var b = y + height - radius;
+
+
+    canvas.context.arc(l, t, radius,     -Math.PI, -Math.PI*0.5, false);  // 左上
+    canvas.context.arc(r, t, radius, -Math.PI*0.5,            0, false);  // 右上
+    canvas.context.arc(r, b, radius,            0,  Math.PI*0.5, false);  // 右下
+    canvas.context.arc(l, b, radius,  Math.PI*0.5,      Math.PI, false);  // 左下
+    canvas.closePath();
+    if(isFill)canvas.fill();else canvas.stroke();
+};
 
 
 window.onload = function() {
