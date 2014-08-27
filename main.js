@@ -253,15 +253,35 @@ var SE_PATH={
 		do2:"piano/do2.mp3",
 };
 
-var PianoScene = function(game){
+
+//タイトルシーン
+var TitleScene = function(g){
 	var s=new Scene();
-	KenbansAdd(s);
-    s.on('touchstart',function(e){
-    	if(e.y<SPRITE_HEIGHT*2)game.replaceScene(game.rootScene);
+    s.count=0;
+    s.onenterframe=function(){
+    	this.count++;
+    	if(this.count===30){
+    		g.pushScene(PianoScene(g));
+    	}
+    };
+    s.addChild(new Label("Test"));
+    s.on('touchstart',function(){
+    	this.count=0;
     });
     return s;
 };
 
+
+var PianoScene = function(g){
+	var s=new Scene();
+	KenbansAdd(s);
+    s.on('touchstart',function(e){
+    	if(e.y<SPRITE_HEIGHT*2)g.popScene();
+    });
+    return s;
+};
+
+//
 var KenbansAdd=function(s){
 	for(var i=0;i<8;i++)s.addChild(Kenbans[Kenbans.name[i]]);
     for(var i=0;i<7;i++)if(Kenbans.names[i])s.addChild(Kenbans[Kenbans.names[i]]);
@@ -291,7 +311,6 @@ window.onload = function() {
 		"piano/do2.mp3");
     game.onload = function() {
 	var scene = game.rootScene;
-	scene.backgroundColor = "aqua";
 
 	/*
 	 *鍵盤
@@ -369,20 +388,7 @@ window.onload = function() {
             });
         }
     }
-
-        scene.count=0;
-        scene.onenterframe=function(){
-        	this.count++;
-        	if(this.count===30){
-        		game.replaceScene(PianoScene(game));
-        	}
-        };
-
-        scene.on('touchstart',function(){
-        	this.count=0;
-        });
-
-
+    game.replaceScene(TitleScene(game));
 
     };
 
