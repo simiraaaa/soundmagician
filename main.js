@@ -272,6 +272,15 @@ var GAKUHU={
 			canSentou:true,
 			s:[0,2,4],
 			t:[0,15,30]
+		},
+		mezame:{
+			name:"目覚めの歌",
+			setumei:"夢の世界から現実に戻る",
+			mp:0,
+			canField:true,
+			canSentou:false,
+			s:[12,7,5,7,5,0,5,7,12],
+			t:[0,8,16,24,32,40,48,55,63]
 		}
 }
 
@@ -441,8 +450,9 @@ var TitleScene = function(){
 	var npcs=[];
 	npcs[0]=new NPC(25,["あなたの持ってる鍵盤で、そこの宝箱に入ってる楽譜を演奏してみて。","鍵盤は画面の左上をタッチすると使えるよ。あと楽譜は画面の右側の♪をタッチすると見れるよ。"]);
 	npcs[0].setPosition(20,30);
-    Grouping([map,npcs[0],player]);
-    player.collideWith=npcs;
+
+	npcs[1]=new Takara("mezame",23,29);
+    Grouping([map,npcs[0],npcs[1],player]);
     FieldAdd();
     TouchCtrl();
     MessageWindowCt(["ここはどこだろう……。","……とりあえず、抜け出そう。"]);
@@ -453,7 +463,6 @@ var TitleScene = function(){
     		if(game.input.touch.leftupstart)game.pushScene(PianoScene());
     		else if(game.input.touch.rightstart)game.pushScene(GakuhuSelectScene());
     	}
-    	Scroll();
     }
     return s;
 };
@@ -517,8 +526,8 @@ var GakuhuSelectScene = function(){
 	x=320/3;
 	y=0;
 	s.addChild(WindowCreator(x,y,x,x*2));
-	s.addChild(new Label("説明",x+5,y+5));
-	s.setumeiLabel=new Label("",x+5,y+25);
+	s.addChild(new Label("説明",x+2,y+2));
+	s.setumeiLabel=new Label("",x+2,y+22);
 	s.setumeiLabel.width=x-20;
 	s.addChild(s.setumeiLabel);
 
@@ -670,11 +679,12 @@ var Player = enchant.Class.create(Sprite, {
 
                         if (-8 <= _x && _x < map.width && -16 <= _y && _y < map.height &&
                             !map.hitTest(_x + 16, _y + 16) && enemies.length < 1) {
-                                this.jyoutai = JYOUTAI.Walk;
-                                this.tl.moveTo(_x, _y, 4).then(function(){
+                            this.jyoutai = JYOUTAI.Walk;
+                            this.tl.moveTo(_x, _y, 1).then(function(){
                                 this.animCount = 0;
                                 this.jyoutai = JYOUTAI.Idle;
                             });
+
                         }
                     }
                 }
@@ -759,18 +769,16 @@ var Player = enchant.Class.create(Sprite, {
 });
 
 
-// NPC
+//NPC
 var NPC = enchant.Class.create(enchant.Sprite, {
-    initialize : function(id,text){
+    initialize : function(id,text,x,y){
         enchant.Sprite.call(this, 32, 32);
         var image = new Surface(32, 32);
         image.draw(game.assets['images/chara0.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
         this.image = image;
-        this.isTalking = false;
-        this.message = null;
-        this.keyEnable = true;
-        this.windowEnable = true;
         this.talktext=text || ["……。"];
+        if(y!==undefined)this.setPosition(x, y);
+        player.collideWith.push(this);
     },
     setPosition : function(x, y){
         this.x = x * 16 - 8;
@@ -788,6 +796,47 @@ var NPC = enchant.Class.create(enchant.Sprite, {
                 (player.x == this.x + 16 && player.y == this.y && game.input.left) ||
                 (player.x == this.x - 16 && player.y == this.y && game.input.right) ||
                 (player.x == this.x && player.y == this.y + 16 && game.input.up);
+    }
+});
+
+//宝箱
+var Takara = enchant.Class.create(enchant.Sprite, {
+    initialize : function(item,x,y){
+        enchant.Sprite.call(this, 16, 16);
+        var image = new Surface(16, 16);
+        image.draw(game.assets['images/map1.png'], 11 * 16, 16, 16, 16, 0, 0, 16, 16);
+        this.image = image;
+        if(y!==undefined)this.setPosition(x, y);
+        this.item=item;
+        player.collideWith.push(this);
+    },
+    setPosition : function(x, y){
+        this.x = x * 16 ;
+        this.y = y * 16 ;
+        return this;
+    },
+    onenterframe : function(){
+    	for(var i=0;i<savedata.gakuhu.length;i++){
+    		if(this.item===savedata.gakuhu[i]){
+    			player.collideWith.splice(player.collideWith.indexOf(this),1);
+    			stage.removeChild(this);
+    		}
+    	}
+        if(this.isItemGet()){
+			player.collideWith.splice(player.collideWith.indexOf(this),1);
+			MessageWindowCt([GAKUHU[this.item].name+"の楽譜を手に入れた!"]);
+			var i=savedata.gakuhu.length;
+			savedata.gakuhu[i]=this.item;
+			game.pushScene(AutoPianoScene(i));
+			stage.removeChild(this);
+        }
+    },
+    isItemGet : function(){
+        // プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
+        return  (player.x == this.x - 8 && player.y == this.y - 32 && game.input.down) ||
+                (player.x == this.x + 8 && player.y == this.y - 16 && game.input.left) ||
+                (player.x == this.x - 24 && player.y == this.y -16  && game.input.right) ||
+                (player.x == this.x - 8 && player.y == this.y  && game.input.up);
     }
 });
 
@@ -826,6 +875,7 @@ var Grouping=function(children,s){
 	s=s || scene;
 	stage = new Group();
 	for(var i=0;i<children.length;i++)stage.addChild(children[i]);
+	stage.onenterframe=Scroll;
     s.addChild(stage);
 }
 
@@ -1023,7 +1073,7 @@ var RoundRect= function(canvas, x, y, width, height, radius, isFill) {
 
 window.onload = function() {
     game = new Game();
-    game.fps=100;
+    game.fps=30;
 	game.input.touch={};
 	game.preload("piano/do1.mp3",
 		"piano/do1s.mp3",
