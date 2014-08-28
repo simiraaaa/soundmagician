@@ -267,7 +267,7 @@ var GAKUHU={
 			name:"音波",
 			setumei:"音波を飛ばして敵を攻撃する",
 			mp:0,
-			power:1,//攻撃力の何倍のダメージを与えるか
+			power:1,
 			canField:false,
 			canSentou:true,
 			s:[0,2,4],
@@ -462,11 +462,42 @@ var TitleScene = function(){
 var PianoScene = function(){
 	var s=new Scene();
 	KenbansAdd(s);
-	//楽譜を選択
-	//戻る
+	ModoruCreator(s,160,160);
     s.on('touchstart',function(e){
     	if(e.y<SPRITE_HEIGHT*2)game.popScene();
     });
+    return s;
+};
+var AutoPianoScene = function(i){
+	var s=new Scene();
+	KenbansAdd(s);
+	ModoruCreator(s,160,160);
+    s.on('touchstart',function(e){
+    	if(e.y<SPRITE_HEIGHT*2){
+			if(this.i>0)Kenbans[Kenbans.nn[GAKUHU[this.n].s[this.i-1]]].ontouchend();
+    		game.popScene();
+    	}
+    });
+    s.c=0;
+    s.n=savedata.gakuhu[i];
+    s.i=0;
+    s.onenterframe=function(){
+
+    	if(this.i>=GAKUHU[this.n].t.length){
+    		if(this.c===GAKUHU[this.n].t[this.i-1]+30){
+    			Kenbans[Kenbans.nn[GAKUHU[this.n].s[this.i-1]]].ontouchend();
+    			game.popScene();
+    		}
+    	}else if(this.c===GAKUHU[this.n].t[this.i]){
+    		if(this.i>0){
+    			Kenbans[Kenbans.nn[GAKUHU[this.n].s[this.i-1]]].ontouchend();
+    		}
+    		Kenbans[Kenbans.nn[GAKUHU[this.n].s[this.i]]].ontouchstart();
+    		this.i++;
+    	}
+    	this.c++;
+    };
+
     return s;
 };
 
@@ -493,9 +524,7 @@ var GakuhuSelectScene = function(){
 
 	x=x+25;
 	y=x*2-15;
-
-	s.addChild(WindowCreator(x,y,50,30));
-	s.addChild(new Label("戻る",x+5,y+5));
+	ModoruCreator(s,x,y);
 
 	s.gakuhu=[];
 	for(var i=0;i<savedata.gakuhu.length;i++){
@@ -528,6 +557,7 @@ var GakuhuSelectScene = function(){
 	s.setumeiLabel.text=GAKUHU.onpa.name+"<BR>消費MP"+GAKUHU.onpa.mp+"<BR>"+GAKUHU.onpa.setumei;
 	s.onenterframe=function(){
 		if(game.input.touch.downstart)game.popScene();
+		else if(game.input.touch.leftstart)game.pushScene(AutoPianoScene(this.iti));
 	};
 
     return s;
@@ -538,6 +568,12 @@ var KenbansAdd=function(s){
 	for(var i=0;i<8;i++)s.addChild(Kenbans[Kenbans.name[i]]);
     for(var i=0;i<7;i++)if(Kenbans.names[i])s.addChild(Kenbans[Kenbans.names[i]]);
 };
+
+var ModoruCreator=function(s,x,y){
+	s.addChild(WindowCreator(x,y,50,30));
+	s.addChild(new Label("戻る",x+5,y+5));
+};
+
 
 var Kenbans;
 var map;
@@ -1012,7 +1048,9 @@ window.onload = function() {
             name:["do1","re","mi","fa","so","ra","si","do2"],
             names:["do1s","res","","fas","sos","ras"],
             namej:["ド↓","レ","ミ","ファ","ソ","ラ","シ","ド↑"],
-            namesj:["ド♯","レ♯","","ファ♯","ソ♯","ラ♯"]
+            namesj:["ド♯","レ♯","","ファ♯","ソ♯","ラ♯"],
+            n:[],
+            nn:["do1","do1s","re","res","mi","fa","fas","so","sos","ra","ras","si","do2"]
         };
 
 	for(var i=0;i<8;i++){
@@ -1029,19 +1067,19 @@ window.onload = function() {
         sprite.y=SPRITE_HEIGHT*2;
         sprite.otoname=Kenbans.namej[i];
         sprite.sepath=SE_PATH[Kenbans.name[i]];
-        sprite.addEventListener('touchstart',function(){
+        sprite.ontouchstart=function(){
             this.image.context.fillStyle = "blue";
             this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
         	game.assets[this.sepath].clone().play();
             console.log(this.otoname);
-        });
+        };
 
-        sprite.addEventListener('touchend',function(){
+        sprite.ontouchend=function(){
             this.image.context.fillStyle = "white";
             this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
-        });
+        };
     }
     for(var i=0;i<7;i++){
         if(Kenbans.names[i]){
@@ -1056,18 +1094,20 @@ window.onload = function() {
             sprite.y=SPRITE_HEIGHT*2;
             sprite.otoname=Kenbans.namesj[i];
             sprite.sepath=SE_PATH[Kenbans.names[i]];
-            sprite.addEventListener('touchstart',function(){
+            sprite.ontouchstart=function(){
             	this.image.context.fillStyle="teal";
             	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
             	game.assets[this.sepath].clone().play();
                 console.log(this.otoname);
-            });
-            sprite.addEventListener('touchend',function(){
+            };
+            sprite.ontouchend=function(){
             	this.image.context.fillStyle="black";
             	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
-            });
+            };
         }
     }
+    for(var i=0;i<13;i++)Kenbans.n[i]=Kenbans[Kenbans.nn[i]];
+
     game.replaceScene(TitleScene());
 
     };
