@@ -24,7 +24,7 @@ enchant.Label = enchant.Class.create(enchant.Entity, {
         this.width = 300;
         this.fontsize = 14;
         this.fonttype = 'serif';
-        this.font=this.fontsize+"px "+this.fonttype;
+        this.font=this.fontsize+" "+this.fonttype;
         this.textAlign = 'left';
 
         this._debugColor = '#ff0000';
@@ -257,7 +257,7 @@ var SE_PATH={
 //タイトルシーン
 var TitleScene = function(){
 	var s=new Scene();
-
+	scene=s;
     player=Player();
 	player.setPosition(10,10);
 	map = new Map(16, 16);
@@ -417,13 +417,18 @@ var TitleScene = function(){
 	                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 	                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1]
 	                    ];
-
-    Grouping(s,[map,player]);
-
-    FieldAdd(s);
-    TouchCtrl(s);
+	var npcs=[];
+	npcs[0]=new NPC(25,["あなたの持ってる鍵盤で、そこの宝箱に入ってる楽譜を演奏してみて。","鍵盤は画面の左上をタッチすると出せるよ。あと楽譜は画面の右側から見れるよ。"]);
+	npcs[0].setPosition(20,30);
+    Grouping([map,npcs[0],player]);
+    player.collideWith=npcs;
+    FieldAdd();
+    TouchCtrl();
+    MessageWindowCt(["ここはどこだろう……。","……とりあえず、抜け出そう。"]);
     s.onenterframe=function(){
-    	if(game.input.touch.leftupstart)game.pushScene(PianoScene());
+    	if(s.isMessage){
+    		if(game.input.touch.start)MessageNext();
+    	}else if(game.input.touch.leftupstart)game.pushScene(PianoScene());
     	Scroll();
     }
     return s;
@@ -455,9 +460,10 @@ var map;
 var game;
 var player;
 var stage;
+var scene;
 
 //状態の定義
-var BehaviorTypes = {
+var JYOUTAI = {
     Idle : 0,       // 立ち状態
     Walk : 1,       // 歩き状態
     Attack : 2,     // 攻撃状態
@@ -476,9 +482,9 @@ var Player = enchant.Class.create(Sprite, {
         this.y = 0;
         this.atk = 1;
         this.hp = 1;
-        this.walkable = true;
+        this.canWalk = true;
 
-        this.behavior = BehaviorTypes.Idle;
+        this.behavior = JYOUTAI.Idle;
         this.direction = 0;
         this.animCount = 1;
         this.damageFlag = false;
@@ -504,12 +510,12 @@ var Player = enchant.Class.create(Sprite, {
         }
         this.animCount ++;
         switch(this.behavior){
-            case BehaviorTypes.Idle:
+            case JYOUTAI.Idle:
                 this.frame = this.direction * 3 + 1;
                 this.animCount = 0;
                 // 攻撃
                 if(game.input.a){
-                    this.behavior = BehaviorTypes.Attack;
+                    this.behavior = JYOUTAI.Attack;
                     var chara = this;
                     this.tl.delay(2).then(function(){
                         var _x = this.x + (this.direction == 1 ? -16 : (this.direction == 2 ? 16 : 0));
@@ -519,7 +525,7 @@ var Player = enchant.Class.create(Sprite, {
                             enemy.damage(chara.atk);
                         });
                     });
-                }else if(this.walkable){
+                }else if(this.canWalk){
                     // 移動
                     this.direction = input.d;
                     if (input.x || input.y) {
@@ -529,29 +535,29 @@ var Player = enchant.Class.create(Sprite, {
 
                         if (-8 <= _x && _x < map.width && -16 <= _y && _y < map.height &&
                             !map.hitTest(_x + 16, _y + 16) && enemies.length < 1) {
-                                this.behavior = BehaviorTypes.Walk;
+                                this.behavior = JYOUTAI.Walk;
                                 this.tl.moveTo(_x, _y, 4).then(function(){
                                 this.animCount = 0;
-                                this.behavior = BehaviorTypes.Idle;
+                                this.behavior = JYOUTAI.Idle;
                             });
                         }
                     }
                 }
                 break;
 
-            case BehaviorTypes.Walk:
+            case JYOUTAI.Walk:
                 this.frame = this.direction * 3 + (this.animCount % 3);
                 break;
 
-            case BehaviorTypes.Attack:
+            case JYOUTAI.Attack:
                 this.frame = this.direction * 3 + (this.animCount / 2 % 3) + 6;
                 if(this.animCount > 5){
                     this.anim = 1;
-                    this.behavior = BehaviorTypes.Idle;
+                    this.behavior = JYOUTAI.Idle;
                 }
                 break;
 
-            case BehaviorTypes.Dead:
+            case JYOUTAI.Dead:
                 this.frame = 1;
                 if(this.animCount < 10){
                     this.opacity = (10 - this.animCount) / 10.0;
@@ -577,8 +583,8 @@ var Player = enchant.Class.create(Sprite, {
         }
     },
     damage : function(atk){
-        if( this.behavior != BehaviorTypes.Damaged &&
-            this.behavior != BehaviorTypes.Dead){
+        if( this.behavior != JYOUTAI.Damaged &&
+            this.behavior != JYOUTAI.Dead){
             this.hp -= atk;
             if(this.hp > 0){
                 this.damageFlag = true;
@@ -587,7 +593,7 @@ var Player = enchant.Class.create(Sprite, {
                     this.damageFlag = false;
                 });
             }else{
-                this.behavior = BehaviorTypes.Dead;
+                this.behavior = JYOUTAI.Dead;
             }
             this.animCount = 0;
         }
@@ -618,9 +624,70 @@ var Player = enchant.Class.create(Sprite, {
 });
 
 
+// NPC
+var NPC = enchant.Class.create(enchant.Sprite, {
+    initialize : function(id,text){
+        enchant.Sprite.call(this, 32, 32);
+        var image = new Surface(32, 32);
+        image.draw(game.assets['images/chara0.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
+        this.image = image;
+        this.isTalking = false;
+        this.message = null;
+        this.keyEnable = true;
+        this.windowEnable = true;
+        this.talktext=text || ["……。"];
+    },
+    setPosition : function(x, y){
+        this.x = x * 16 - 8;
+        this.y = y * 16 - 16;
+        return this;
+    },
+    onenterframe : function(){
+        if(this.startTalk()){
+        	MessageWindowCt(this.talktext);
+        }
+    },
+    startTalk : function(){
+        // プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
+        return  (player.x == this.x && player.y == this.y - 32 && game.input.down) ||
+                (player.x == this.x + 16 && player.y == this.y && game.input.left) ||
+                (player.x == this.x - 16 && player.y == this.y && game.input.right) ||
+                (player.x == this.x && player.y == this.y + 16 && game.input.up);
+    }
+});
+
+
+
+
+
+//メッセージウィンドウ制御
+var MessageWindowCt=function(text,s){
+	s=s || scene;
+	s.isMessage=true;
+	player.canWalk=false;
+	s.mst.stack=text;
+	s.mst.text=text[0];
+	s.mswin.visible=true;
+};
+//メッセージを次に進める.なかったら消す。
+var MessageNext=function(s){
+	s=s || scene;
+	s.mscount++;
+	if(s.mst.stack.length<=s.mscount){
+		s.mst.text="";
+		s.mst.stack=null;
+		s.mscount=0;
+		s.isMessage=false;
+		player.canWalk=true;
+		s.mswin.visible=false;
+	}else{
+		s.mst.text=s.mst.stack[s.mscount];
+	}
+}
 
 //スクロール用にまとめるやつ
-var Grouping=function(s,children){
+var Grouping=function(children,s){
+	s=s || scene;
 	stage = new Group();
 	for(var i=0;i<children.length;i++)stage.addChild(children[i]);
     s.addChild(stage);
@@ -639,7 +706,9 @@ var Scroll=function (){
 //画面９分割タッチイベント
 var TouchCtrl=function(s){
 
-	s.on('exit',function(){
+	s=s || scene;
+	game.on('exitframe',function(){
+		game.input.touch.start   =false;
 		game.input.touch.leftupstart   =false;
 		game.input.touch.upstart       =false;
 		game.input.touch.rightupstart  =false;
@@ -652,6 +721,7 @@ var TouchCtrl=function(s){
 	});
 
 	s.on('touchstart',function(e){
+		game.input.touch.start   =true;
 		var size=320/3;
 		if(e.x <size){
 			if(e.y <size){
@@ -732,6 +802,7 @@ var TouchCtrl=function(s){
 
 //フィールドのシーンに追加するような奴
 var FieldAdd=function(s){
+	s=s || scene;
 	var pad = new Pad();
     pad.x = 5;
     pad.y = 215;
@@ -750,6 +821,22 @@ var FieldAdd=function(s){
     s.miniken.x=30;
     s.miniken.y=30;
     s.addChild(s.miniken);
+    s.mswin=new Sprite(321,111);
+    s.mswin.image=new Surface(321,111);
+    s.mswin.x=0;
+    s.mswin.y=320-111;
+    s.mswin.image.context.fillStyle="white";
+    s.mswin.image.context.lineWidth=3;
+    RoundRect(s.mswin.image, 0, 0, 320, 110, 10, 1);
+    RoundRect(s.mswin.image, 0, 0, 320, 110, 10, 0);
+    s.addChild(s.mswin);
+    s.mswin.visible=false;
+    s.mscount=0;
+    s.mst=new Label();
+    s.mst.width=305;
+    s.mst.x=5;
+    s.mst.y=320-105;
+    s.addChild(s.mst);
 };
 
 //角丸
@@ -759,18 +846,19 @@ var RoundRect= function(canvas, x, y, width, height, radius, isFill) {
     var t = y + radius;
     var b = y + height - radius;
 
-
+    canvas.context.beginPath();
     canvas.context.arc(l, t, radius,     -Math.PI, -Math.PI*0.5, false);  // 左上
     canvas.context.arc(r, t, radius, -Math.PI*0.5,            0, false);  // 右上
     canvas.context.arc(r, b, radius,            0,  Math.PI*0.5, false);  // 右下
     canvas.context.arc(l, b, radius,  Math.PI*0.5,      Math.PI, false);  // 左下
-    canvas.closePath();
-    if(isFill)canvas.fill();else canvas.stroke();
+    canvas.context.closePath();
+    if(isFill)canvas.context.fill();else canvas.context.stroke();
 };
 
 
 window.onload = function() {
     game = new Game();
+    game.fps=100;
 	game.input.touch={};
 	game.preload("piano/do1.mp3",
 		"piano/do1s.mp3",
