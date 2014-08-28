@@ -950,7 +950,7 @@ var FieldAdd=function(s){
     RoundRect(s.minigakuhu.image, 0, 0, 29, 29, 10, 1);
     RoundRect(s.minigakuhu.image, 0, 0, 29, 29, 10, 0);
     s.minigakuhu.image.context.fillStyle="black";
-    s.minigakuhu.image.context.font="bold 24px 'serif'";
+    s.minigakuhu.image.context.font="bold 24px 'ＭＳ ゴシック'";
     s.minigakuhu.image.context.fillText("♪",2,23);
     s.minigakuhu.x=320-50;
     s.minigakuhu.y=160;
