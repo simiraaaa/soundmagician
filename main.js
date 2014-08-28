@@ -663,6 +663,7 @@ var NPC = enchant.Class.create(enchant.Sprite, {
 //メッセージウィンドウ制御
 var MessageWindowCt=function(text,s){
 	s=s || scene;
+	game.input.touch.start=false;
 	s.isMessage=true;
 	player.canWalk=false;
 	s.mst.stack=text;
