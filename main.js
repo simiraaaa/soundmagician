@@ -480,19 +480,20 @@ var AutoPianoScene = function(i){
     });
     s.c=0;
     s.n=savedata.gakuhu[i];
+    s.nn=i;
     s.i=0;
     s.onenterframe=function(){
 
     	if(this.i>=GAKUHU[this.n].t.length){
     		if(this.c===GAKUHU[this.n].t[this.i-1]+30){
-    			Kenbans[Kenbans.nn[GAKUHU[this.n].s[this.i-1]]].ontouchend();
+    			Kenbans.n[GAKUHU[this.n].s[this.i-1]].ontouchend();
     			game.popScene();
     		}
     	}else if(this.c===GAKUHU[this.n].t[this.i]){
     		if(this.i>0){
-    			Kenbans[Kenbans.nn[GAKUHU[this.n].s[this.i-1]]].ontouchend();
+    			Kenbans.n[GAKUHU[this.n].s[this.i-1]].ontouchend();
     		}
-    		Kenbans[Kenbans.nn[GAKUHU[this.n].s[this.i]]].ontouchstart();
+    		Kenbans.n[GAKUHU[this.n].s[this.i]].ontouchstart();
     		this.i++;
     	}
     	this.c++;
@@ -532,7 +533,8 @@ var GakuhuSelectScene = function(){
 		s.gakuhu[i].image=new Surface(108,18);
 		s.gakuhu[i].x=320/3*2;
 		s.gakuhu[i].y=17*i;
-		s.gakuhu[i].image.context.fillStyle="#000055";
+		s.gakuhu[i].image.context.fillStyle="black";
+		s.gakuhu[0].image.context.fillStyle="#005";
 		s.gakuhu[i].image.context.strokeStyle="white";
 		RoundRect(s.gakuhu[i].image,0,0,106,17,4,1);
 		RoundRect(s.gakuhu[i].image,0,0,106,17,4,0);
@@ -543,9 +545,23 @@ var GakuhuSelectScene = function(){
 		s.gakuhu[i].number=i;
 
 		s.gakuhu[i].ontouchstart=function(){
-			s.gakuhu[s.iti].opacity=1;
+			s.gakuhu[s.iti].image.context.fillStyle="black";
+			s.gakuhu[s.iti].image.context.strokeStyle="white";
+			RoundRect(s.gakuhu[s.iti].image,0,0,106,17,4,1);
+			RoundRect(s.gakuhu[s.iti].image,0,0,106,17,4,0);
+			s.gakuhu[s.iti].image.context.fillStyle="white";
+			s.gakuhu[s.iti].image.context.textBaseline = 'top';
+			s.gakuhu[s.iti].image.context.font="bold 16px 'ＭＳ ゴシック";
+			s.gakuhu[s.iti].image.context.fillText(GAKUHU[savedata.gakuhu[s.iti]].name,0,0,100);
 			s.iti=this.number;
-			this.opacity=0.5;
+			s.gakuhu[s.iti].image.context.fillStyle="#000055";
+			s.gakuhu[s.iti].image.context.strokeStyle="white";
+			RoundRect(s.gakuhu[s.iti].image,0,0,106,17,4,1);
+			RoundRect(s.gakuhu[s.iti].image,0,0,106,17,4,0);
+			s.gakuhu[s.iti].image.context.fillStyle="white";
+			s.gakuhu[s.iti].image.context.textBaseline = 'top';
+			s.gakuhu[s.iti].image.context.font="bold 16px 'ＭＳ ゴシック";
+			s.gakuhu[s.iti].image.context.fillText(GAKUHU[savedata.gakuhu[s.iti]].name,0,0,100);
 			s.setumeiLabel.text=GAKUHU[savedata.gakuhu[this.number]].name+"<BR>消費MP"+GAKUHU[savedata.gakuhu[this.number]].mp+"<BR>"+GAKUHU[savedata.gakuhu[this.number]].setumei;
 		}
 
@@ -553,7 +569,6 @@ var GakuhuSelectScene = function(){
 
 	}
 	s.iti=0;
-	s.gakuhu[0].opacity=0.5;
 	s.setumeiLabel.text=GAKUHU.onpa.name+"<BR>消費MP"+GAKUHU.onpa.mp+"<BR>"+GAKUHU.onpa.setumei;
 	s.onenterframe=function(){
 		if(game.input.touch.downstart)game.popScene();
@@ -978,7 +993,7 @@ var FieldAdd=function(s){
 //枠を作る
 var WindowCreator=function(x,y,width,height){
 	c=new Sprite(width+1,height+1);
-    c.image=new Surface(width+1,height+1);
+    c.image=new Surface(width+10,height+10);
     c.x=x;
     c.y=y;
     c.image.context.fillStyle="black";
