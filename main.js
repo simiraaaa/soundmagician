@@ -17,17 +17,19 @@ enchant.Label = enchant.Class.create(enchant.Entity, {
      * @constructs
      * @extends enchant.Entity
      */
-    initialize: function(text) {
+    initialize: function(text,x,y) {
         enchant.Entity.call(this);
-
         this.text = text || '';
         this.width = 300;
-        this.fontsize = 14;
-        this.fonttype = 'serif';
+        this.fontsize = 'bold 16';
+        this.fonttype = 'ＭＳ ゴシック';
         this.font=this.fontsize+" "+this.fonttype;
         this.textAlign = 'left';
-
+        this.color="white";
         this._debugColor = '#ff0000';
+
+        this.x=x===undefined?0:x;
+        this.y=y===undefined?0:y;
     },
     /**#nocode+*/
     width: {
@@ -254,6 +256,25 @@ var SE_PATH={
 };
 
 
+var savedata={
+		name:"フォルテ",
+		level:1,
+		gakuhu:["onpa"],
+		exp:0
+}
+var GAKUHU={
+		onpa:{
+			name:"音波",
+			setumei:"音波を飛ばして敵を攻撃する",
+			mp:0,
+			power:1,//攻撃力の何倍のダメージを与えるか
+			canField:false,
+			canSentou:true,
+			s:[0,2,4],
+			t:[0,15,30]
+		}
+}
+
 //タイトルシーン
 var TitleScene = function(){
 	var s=new Scene();
@@ -418,7 +439,7 @@ var TitleScene = function(){
 	                        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1]
 	                    ];
 	var npcs=[];
-	npcs[0]=new NPC(25,["あなたの持ってる鍵盤で、そこの宝箱に入ってる楽譜を演奏してみて。","鍵盤は画面の左上をタッチすると出せるよ。あと楽譜は画面の右側から見れるよ。"]);
+	npcs[0]=new NPC(25,["あなたの持ってる鍵盤で、そこの宝箱に入ってる楽譜を演奏してみて。","鍵盤は画面の左上をタッチすると使えるよ。あと楽譜は画面の右側の♪をタッチすると見れるよ。"]);
 	npcs[0].setPosition(20,30);
     Grouping([map,npcs[0],player]);
     player.collideWith=npcs;
@@ -428,7 +449,10 @@ var TitleScene = function(){
     s.onenterframe=function(){
     	if(s.isMessage){
     		if(game.input.touch.start)MessageNext();
-    	}else if(game.input.touch.leftupstart)game.pushScene(PianoScene());
+    	}else{
+    		if(game.input.touch.leftupstart)game.pushScene(PianoScene());
+    		else if(game.input.touch.rightstart)game.pushScene(GakuhuSelectScene());
+    	}
     	Scroll();
     }
     return s;
@@ -438,14 +462,74 @@ var TitleScene = function(){
 var PianoScene = function(){
 	var s=new Scene();
 	KenbansAdd(s);
-	var label=new Label("もどる");
-	label.fontsize=30;
-	label.x=60;
-	label.y=60;
-	s.addChild(label);
+	//楽譜を選択
+	//戻る
     s.on('touchstart',function(e){
     	if(e.y<SPRITE_HEIGHT*2)game.popScene();
     });
+    return s;
+};
+
+var GakuhuSelectScene = function(){
+	var s=new Scene();
+	TouchCtrl(s);
+	var x=15;
+	var y=25;
+	s.addChild(WindowCreator(x,y,75,50));
+	s.addChild(new Label("見ながら<br>演奏",x+5,y+5));
+
+	y=y+106;
+	s.addChild(WindowCreator(x,y,75,50));
+	s.addChild(new Label("楽譜を<br>見る",x+5,y+5));
+
+	x=320/3;
+	y=0;
+	s.addChild(WindowCreator(x,y,x,x*2));
+	s.addChild(new Label("説明",x+5,y+5));
+	s.setumeiLabel=new Label("",x+5,y+25);
+	s.setumeiLabel.width=x-20;
+	s.addChild(s.setumeiLabel);
+
+
+	x=x+25;
+	y=x*2-15;
+
+	s.addChild(WindowCreator(x,y,50,30));
+	s.addChild(new Label("戻る",x+5,y+5));
+
+	s.gakuhu=[];
+	for(var i=0;i<savedata.gakuhu.length;i++){
+		s.gakuhu[i]=new Sprite(108,18);
+		s.gakuhu[i].image=new Surface(108,18);
+		s.gakuhu[i].x=320/3*2;
+		s.gakuhu[i].y=17*i;
+		s.gakuhu[i].image.context.fillStyle="#000055";
+		s.gakuhu[i].image.context.strokeStyle="white";
+		RoundRect(s.gakuhu[i].image,0,0,106,17,4,1);
+		RoundRect(s.gakuhu[i].image,0,0,106,17,4,0);
+		s.gakuhu[i].image.context.fillStyle="white";
+		s.gakuhu[i].image.context.textBaseline = 'top';
+		s.gakuhu[i].image.context.font="bold 16px 'ＭＳ ゴシック";
+		s.gakuhu[i].image.context.fillText(GAKUHU[savedata.gakuhu[i]].name,0,0,100);
+		s.gakuhu[i].number=i;
+
+		s.gakuhu[i].ontouchstart=function(){
+			s.gakuhu[s.iti].opacity=1;
+			s.iti=this.number;
+			this.opacity=0.5;
+			s.setumeiLabel.text=GAKUHU[savedata.gakuhu[this.number]].name+"<BR>消費MP"+GAKUHU[savedata.gakuhu[this.number]].mp+"<BR>"+GAKUHU[savedata.gakuhu[this.number]].setumei;
+		}
+
+		s.addChild(s.gakuhu[i]);
+
+	}
+	s.iti=0;
+	s.gakuhu[0].opacity=0.5;
+	s.setumeiLabel.text=GAKUHU.onpa.name+"<BR>消費MP"+GAKUHU.onpa.mp+"<BR>"+GAKUHU.onpa.setumei;
+	s.onenterframe=function(){
+		if(game.input.touch.downstart)game.popScene();
+	};
+
     return s;
 };
 
@@ -484,7 +568,7 @@ var Player = enchant.Class.create(Sprite, {
         this.hp = 1;
         this.canWalk = true;
 
-        this.behavior = JYOUTAI.Idle;
+        this.jyoutai = JYOUTAI.Idle;
         this.direction = 0;
         this.animCount = 1;
         this.damageFlag = false;
@@ -509,13 +593,13 @@ var Player = enchant.Class.create(Sprite, {
             input.x = this.control ? 1 :-1;
         }
         this.animCount ++;
-        switch(this.behavior){
+        switch(this.jyoutai){
             case JYOUTAI.Idle:
                 this.frame = this.direction * 3 + 1;
                 this.animCount = 0;
                 // 攻撃
                 if(game.input.a){
-                    this.behavior = JYOUTAI.Attack;
+                    this.jyoutai = JYOUTAI.Attack;
                     var chara = this;
                     this.tl.delay(2).then(function(){
                         var _x = this.x + (this.direction == 1 ? -16 : (this.direction == 2 ? 16 : 0));
@@ -535,10 +619,10 @@ var Player = enchant.Class.create(Sprite, {
 
                         if (-8 <= _x && _x < map.width && -16 <= _y && _y < map.height &&
                             !map.hitTest(_x + 16, _y + 16) && enemies.length < 1) {
-                                this.behavior = JYOUTAI.Walk;
+                                this.jyoutai = JYOUTAI.Walk;
                                 this.tl.moveTo(_x, _y, 4).then(function(){
                                 this.animCount = 0;
-                                this.behavior = JYOUTAI.Idle;
+                                this.jyoutai = JYOUTAI.Idle;
                             });
                         }
                     }
@@ -553,7 +637,7 @@ var Player = enchant.Class.create(Sprite, {
                 this.frame = this.direction * 3 + (this.animCount / 2 % 3) + 6;
                 if(this.animCount > 5){
                     this.anim = 1;
-                    this.behavior = JYOUTAI.Idle;
+                    this.jyoutai = JYOUTAI.Idle;
                 }
                 break;
 
@@ -583,8 +667,8 @@ var Player = enchant.Class.create(Sprite, {
         }
     },
     damage : function(atk){
-        if( this.behavior != JYOUTAI.Damaged &&
-            this.behavior != JYOUTAI.Dead){
+        if( this.jyoutai != JYOUTAI.Damaged &&
+            this.jyoutai != JYOUTAI.Dead){
             this.hp -= atk;
             if(this.hp > 0){
                 this.damageFlag = true;
@@ -593,7 +677,7 @@ var Player = enchant.Class.create(Sprite, {
                     this.damageFlag = false;
                 });
             }else{
-                this.behavior = JYOUTAI.Dead;
+                this.jyoutai = JYOUTAI.Dead;
             }
             this.animCount = 0;
         }
@@ -660,7 +744,7 @@ var NPC = enchant.Class.create(enchant.Sprite, {
 
 
 
-//メッセージウィンドウ制御
+//メッセージウィンドウの
 var MessageWindowCt=function(text,s){
 	s=s || scene;
 	game.input.touch.start=false;
@@ -808,6 +892,23 @@ var FieldAdd=function(s){
     pad.x = 5;
     pad.y = 215;
     s.addChild(pad);
+
+    s.minigakuhu=new Sprite(30,30);
+    s.minigakuhu.image=new Surface(30,30);
+    s.minigakuhu.image.context.fillStyle="white";
+    RoundRect(s.minigakuhu.image, 0, 0, 29, 29, 10, 1);
+    RoundRect(s.minigakuhu.image, 0, 0, 29, 29, 10, 0);
+    s.minigakuhu.image.context.fillStyle="black";
+    s.minigakuhu.image.context.font="bold 24px serif";
+    s.minigakuhu.image.context.fillText("♪",2,23);
+    s.minigakuhu.x=320-50;
+    s.minigakuhu.y=160;
+    s.minigakuhu.onenterframe=function(){
+    	if(game.input.down||game.input.left||game.input.right||game.input.up)this.visible=false;
+    	else this.visible=true;
+    };
+    s.addChild(s.minigakuhu);
+
     s.miniken=new Sprite(30,30);
     s.miniken.image=new Surface(30,30);
     for(var i=0;i<3;i++){
@@ -819,25 +920,37 @@ var FieldAdd=function(s){
     	s.miniken.image.context.fillStyle="black";
     	s.miniken.image.context.fillRect(i*9+5,0,7,15);
     }
-    s.miniken.x=30;
-    s.miniken.y=30;
+    s.miniken.x=50;
+    s.miniken.y=50;
+    s.miniken.onenterframe=function(){
+    	if(game.input.down||game.input.left||game.input.right||game.input.up)this.visible=false;
+    	else this.visible=true;
+    };
     s.addChild(s.miniken);
-    s.mswin=new Sprite(321,111);
-    s.mswin.image=new Surface(321,111);
-    s.mswin.x=0;
-    s.mswin.y=320-111;
-    s.mswin.image.context.fillStyle="white";
-    s.mswin.image.context.lineWidth=3;
-    RoundRect(s.mswin.image, 0, 0, 320, 110, 10, 1);
-    RoundRect(s.mswin.image, 0, 0, 320, 110, 10, 0);
+
+    s.mswin=WindowCreator(0,320-111,320,110);
     s.addChild(s.mswin);
     s.mswin.visible=false;
     s.mscount=0;
     s.mst=new Label();
-    s.mst.width=305;
+    s.mst.width=300;
     s.mst.x=5;
     s.mst.y=320-105;
     s.addChild(s.mst);
+};
+
+//枠を作る
+var WindowCreator=function(x,y,width,height){
+	c=new Sprite(width+1,height+1);
+    c.image=new Surface(width+1,height+1);
+    c.x=x;
+    c.y=y;
+    c.image.context.fillStyle="black";
+    c.image.context.strokeStyle="white";
+    c.image.context.lineWidth=3;
+    RoundRect(c.image, 0, 0, width, height, 10, 1);
+    RoundRect(c.image, 0, 0, width, height, 10, 0);
+    return c;
 };
 
 //角丸
