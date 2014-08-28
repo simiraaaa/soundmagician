@@ -540,7 +540,7 @@ var GakuhuSelectScene = function(){
 		RoundRect(s.gakuhu[i].image,0,0,106,17,4,0);
 		s.gakuhu[i].image.context.fillStyle="white";
 		s.gakuhu[i].image.context.textBaseline = 'top';
-		s.gakuhu[i].image.context.font="bold 16px 'ＭＳ ゴシック";
+		s.gakuhu[i].image.context.font="bold 16px 'ＭＳ ゴシック'";
 		s.gakuhu[i].image.context.fillText(GAKUHU[savedata.gakuhu[i]].name,0,0,100);
 		s.gakuhu[i].number=i;
 
@@ -551,7 +551,7 @@ var GakuhuSelectScene = function(){
 			RoundRect(s.gakuhu[s.iti].image,0,0,106,17,4,0);
 			s.gakuhu[s.iti].image.context.fillStyle="white";
 			s.gakuhu[s.iti].image.context.textBaseline = 'top';
-			s.gakuhu[s.iti].image.context.font="bold 16px 'ＭＳ ゴシック";
+			s.gakuhu[s.iti].image.context.font="bold 16px 'ＭＳ ゴシック'";
 			s.gakuhu[s.iti].image.context.fillText(GAKUHU[savedata.gakuhu[s.iti]].name,0,0,100);
 			s.iti=this.number;
 			s.gakuhu[s.iti].image.context.fillStyle="#000055";
@@ -560,7 +560,7 @@ var GakuhuSelectScene = function(){
 			RoundRect(s.gakuhu[s.iti].image,0,0,106,17,4,0);
 			s.gakuhu[s.iti].image.context.fillStyle="white";
 			s.gakuhu[s.iti].image.context.textBaseline = 'top';
-			s.gakuhu[s.iti].image.context.font="bold 16px 'ＭＳ ゴシック";
+			s.gakuhu[s.iti].image.context.font="bold 16px 'ＭＳ ゴシック'";
 			s.gakuhu[s.iti].image.context.fillText(GAKUHU[savedata.gakuhu[s.iti]].name,0,0,100);
 			s.setumeiLabel.text=GAKUHU[savedata.gakuhu[this.number]].name+"<BR>消費MP"+GAKUHU[savedata.gakuhu[this.number]].mp+"<BR>"+GAKUHU[savedata.gakuhu[this.number]].setumei;
 		}
@@ -950,7 +950,7 @@ var FieldAdd=function(s){
     RoundRect(s.minigakuhu.image, 0, 0, 29, 29, 10, 1);
     RoundRect(s.minigakuhu.image, 0, 0, 29, 29, 10, 0);
     s.minigakuhu.image.context.fillStyle="black";
-    s.minigakuhu.image.context.font="bold 24px serif";
+    s.minigakuhu.image.context.font="bold 24px 'serif'";
     s.minigakuhu.image.context.fillText("♪",2,23);
     s.minigakuhu.x=320-50;
     s.minigakuhu.y=160;
