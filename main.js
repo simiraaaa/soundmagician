@@ -325,8 +325,9 @@ var GAKUHU={
 
 //GAKUHUをループで回すための参照
 var g=GAKUHU;
-g=[g.onpa,g.mezame,g.kanki,g.kirakira,g.bunbun,g.tengoku];
-var gakuhus=g;
+var gakuhus=[g.onpa,g.mezame,g.kanki,g.kirakira,g.bunbun,g.tengoku];
+//魔法が発動しているかどうかgakuhusの順番
+var isMagicActive=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
 var ensou=[];
 //タイトルシーン
@@ -512,6 +513,9 @@ var TitleScene = function(){
     return s;
 };
 
+var KenbansAllTouchEnd=function(){
+	for(var i=0;i<13;i++)Kenbans.n[i].ontouchend();
+};
 
 var PianoScene = function(){
 	var s=new Scene();
@@ -525,17 +529,62 @@ var PianoScene = function(){
     });
     return s;
 };
-var AutoPianoScene = function(i){
+//見ながら演奏
+var MinagaraPianoScene = function(i){
 	var s=new Scene();
 	KenbansAdd(s);
-	ModoruCreator(s,160,160);
+	ModoruCreator(s,160,120);
     s.on('touchstart',function(e){
-    	if(e.y<SPRITE_HEIGHT*2){
-			if(this.i>0)Kenbans[Kenbans.nn[GAKUHU[this.n].s[this.i-1]]].ontouchend();
-			ensou.length=0;
+    	if(e.y<160){
+    		ensou.length=0;
+    		KenbansAllTouchEnd();
     		game.popScene();
     	}
     });
+    s.n=savedata.gakuhu[i];
+    s.nn=i;
+    s.i=0;
+    s.el=ensou.length;
+    s.onenterframe=function(){
+    	if(GAKUHU[this.n].s.length>this.i){
+
+    		Kenbans.n[GAKUHU[this.n].s[this.i]].setRed();
+
+			if(this.el<ensou.length){
+				if(ensou[ensou.length-1]===GAKUHU[this.n].s[this.i]){
+					this.i++;
+					this.el=ensou.length;
+				}else{
+					this.w=WindowCreator(50,150,200,25);
+					this.addChild(this.w);
+					this.w.tl.delay(30).removeFromScene();
+					this.l=new Label("間違えた！最初から！",55,155);
+					this.addChild(this.l);
+					this.l.tl.delay(30).removeFromScene();
+					KenbansAllTouchEnd();
+					ensou.length=0;
+					this.el=0;
+					this.i=0;
+				}
+			}
+    	}
+    };
+    return s;
+};
+var AutoPianoScene = function(i){
+	var s=new Scene();
+	KenbansAdd(s);
+
+	ModoruCreator(s,160,160);
+    s.on('touchstart',function(e){
+    	if(e.y<SPRITE_HEIGHT*2){
+    		KenbansAllTouchEnd();
+			ensou.length=0;
+			isMagicActive=[].concat(this.copied);
+    		game.popScene();
+    	}
+    });
+    s.copied=[].concat(isMagicActive);
     s.c=0;
     s.n=savedata.gakuhu[i];
     s.nn=i;
@@ -544,8 +593,9 @@ var AutoPianoScene = function(i){
 
     	if(this.i>=GAKUHU[this.n].t.length){
     		if(this.c===GAKUHU[this.n].t[this.i-1]+30){
-    			Kenbans.n[GAKUHU[this.n].s[this.i-1]].ontouchend();
+        		KenbansAllTouchEnd();
     			ensou.length=0;
+    			isMagicActive=[].concat(this.copied);
     			game.popScene();
     		}
     	}else if(this.c===GAKUHU[this.n].t[this.i]){
@@ -553,6 +603,7 @@ var AutoPianoScene = function(i){
     			Kenbans.n[GAKUHU[this.n].s[this.i-1]].ontouchend();
     		}
     		Kenbans.n[GAKUHU[this.n].s[this.i]].ontouchstart();
+			Kenbans.n[GAKUHU[this.n].s[this.i]].setRed();
     		this.i++;
     	}
     	this.c++;
@@ -632,6 +683,7 @@ var GakuhuSelectScene = function(){
 	s.onenterframe=function(){
 		if(game.input.touch.downstart)game.popScene();
 		else if(game.input.touch.leftstart)game.pushScene(AutoPianoScene(this.iti));
+		else if(game.input.touch.leftupstart)game.pushScene(MinagaraPianoScene(this.iti));
 	};
 
     return s;
@@ -1199,6 +1251,7 @@ window.onload = function() {
         	for(var i=0;i<gakuhus.length;i++){
         		for(var j=0;j<ensou.length-gakuhus[i].s.length+1;j++){
         			if(ensou.slice(j,j+gakuhus[i].s.length).join()===gakuhus[i].s.join()){
+        				isMagicActive[i]=true;
         			}
         		}
         	}
@@ -1209,6 +1262,12 @@ window.onload = function() {
             this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
         };
+
+        sprite.setRed=function(){
+            this.image.context.fillStyle = "red";
+            this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+            this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+        }
     }
     for(var i=0;i<7;i++){
         if(Kenbans.names[i]){
@@ -1232,6 +1291,7 @@ window.onload = function() {
             	for(var i=0;i<gakuhus.length;i++){
             		for(var j=0;j<ensou.length-gakuhus[i].s.length+1;j++){
             			if(ensou.slice(j,j+gakuhus[i].s.length).join()===gakuhus[i].s.join()){
+            				isMagicActive[i]=true;
             			}
             		}
             	}
@@ -1240,6 +1300,11 @@ window.onload = function() {
             	this.image.context.fillStyle="black";
             	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
             };
+
+            sprite.setRed=function(){
+            	this.image.context.fillStyle="maroon";
+            	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
+            }
         }
     }
     for(var i=0;i<13;i++){
