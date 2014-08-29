@@ -259,13 +259,13 @@ var SE_PATH={
 var savedata={
 		name:"フォルテ",
 		level:1,
-		gakuhu:["onpa"],
+		gakuhu:["onpa","kanki","kirakira","bunbun","tengoku"],
 		exp:0
 }
 var GAKUHU={
 		onpa:{
 			name:"音波",
-			setumei:"音波を飛ばして敵を攻撃する",
+			setumei:"無属性:音波を飛ばして敵を攻撃する",
 			mp:0,
 			power:1,
 			canField:false,
@@ -281,12 +281,51 @@ var GAKUHU={
 			canSentou:false,
 			s:[12,7,5,7,5,0,5,7,12],
 			t:[0,8,16,24,32,40,48,55,63]
+		},
+		kanki:{
+			name:"歓喜の歌",
+			setumei:"以下の効果を選択。[MP5,HP50%回復]<BR>[MP15,HP全回復]<BR>[MP0,MP50%回復]",
+			mp:5,
+			canField:false,
+			canSentou:true,
+			s:[6,6,7,9,9,7,6,4,2,2,4,6,6,4,4,6,6,7,9,9,7,6,4,2,2,4,6,4,2,2],
+			t:[0,14,28,41,55,68,82,95,109,124,137,150,163,184,190,217,230,243,255,269,281,294,306,319,333,344,357,370,389,396]
+		},
+		kirakira:{
+			name:"きらきら星",
+			setumei:"無属性:以下の効果を選択。[MP3,手裏剣]<BR>[MP30,メテオ]",
+			mp:3,
+			canField:false,
+			canSentou:true,
+			power:[3,10],
+			s:[0,0,7,7,9,9,7,5,5,4,4,2,2,0,7,7,5,5,4,4,2,7,7,5,5,4,4,2,0,0,7,7,9,9,7,5,5,4,4,2,2,0],
+			t:[0,14,27,42,56,70,83,109,123,136,149,161,175,189,217,231,245,258,271,284,298,325,340,352,366,380,394,408,435,450,463,477,491,505,518,544,558,571,584,597,611,624]
+		},
+		bunbun:{
+			name:"ぶんぶんぶん",
+			setumei:"無属性:蜂を操り敵を刺しまくる",
+			mp:1,
+			canField:false,
+			canSentou:true,
+			power:1.5,
+			s:[7,5,4,2,4,5,2,0],
+			t:[0,14,28,54,62,69,76,84]
+		},
+		tengoku:{
+			name:"天国と地獄",
+			setumei:"火属性:敵を地獄の業火で焼き尽くす。与えたダメージの20%自分のHPを回復する。",
+			mp:25,
+			power:6,
+			canField:false,
+			canSentou:true,
+			s:[0,0,2,5,4,2,7,7,7,9,4,5,2,2,2,5,4,2,0,12,11,9,7,5,4,2,0,0,2,5,4,2,7,7,7,9,4,5,2,2,2,5,4,2,0,7,2,4,0],
+			t:[0,11,23,27,33,38,43,54,64,70,74,79,84,95,105,110,116,121,127,133,139,144,149,155,160,166,171,182,192,197,203,208,213,224,235,240,247,251,257,269,278,284,289,295,302,307,314,318,324]
 		}
 }
 
 //GAKUHUをループで回すための参照
 var g=GAKUHU;
-g=[g.onpa,g.mezame];
+g=[g.onpa,g.mezame,g.kanki,g.kirakira,g.bunbun,g.tengoku];
 var gakuhus=g;
 
 var ensou=[];
@@ -1189,6 +1228,7 @@ window.onload = function() {
             	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
             	game.assets[this.sepath].clone().play();
             	ensou[ensou.length]=this.number;
+            	//すべての楽譜に対して演奏があってるか判定
             	for(var i=0;i<gakuhus.length;i++){
             		for(var j=0;j<ensou.length-gakuhus[i].s.length+1;j++){
             			if(ensou.slice(j,j+gakuhus[i].s.length).join()===gakuhus[i].s.join()){
