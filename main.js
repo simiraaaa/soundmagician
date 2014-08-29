@@ -268,6 +268,7 @@ var GAKUHU={
 			setumei:"無属性:音波を飛ばして敵を攻撃する",
 			mp:0,
 			power:1,
+			magic:function(){},
 			canField:false,
 			canSentou:true,
 			s:[0,2,4],
@@ -277,6 +278,7 @@ var GAKUHU={
 			name:"目覚めの歌",
 			setumei:"夢の世界から現実に戻る",
 			mp:0,
+			magic:function(){console.log("mezae")},
 			canField:true,
 			canSentou:false,
 			s:[12,7,5,7,5,0,5,7,12],
@@ -286,6 +288,7 @@ var GAKUHU={
 			name:"歓喜の歌",
 			setumei:"以下の効果を選択。[MP5,HP50%回復]<BR>[MP15,HP全回復]<BR>[MP0,MP50%回復]",
 			mp:5,
+			magic:function(){},
 			canField:false,
 			canSentou:true,
 			s:[6,6,7,9,9,7,6,4,2,2,4,6,6,4,4,6,6,7,9,9,7,6,4,2,2,4,6,4,2,2],
@@ -295,6 +298,7 @@ var GAKUHU={
 			name:"きらきら星",
 			setumei:"無属性:以下の効果を選択。[MP3,手裏剣]<BR>[MP30,メテオ]",
 			mp:3,
+			magic:function(){},
 			canField:false,
 			canSentou:true,
 			power:[3,10],
@@ -305,6 +309,7 @@ var GAKUHU={
 			name:"ぶんぶんぶん",
 			setumei:"無属性:蜂を操り敵を刺しまくる",
 			mp:1,
+			magic:function(){},
 			canField:false,
 			canSentou:true,
 			power:1.5,
@@ -315,6 +320,7 @@ var GAKUHU={
 			name:"天国と地獄",
 			setumei:"火属性:敵を地獄の業火で焼き尽くす。与えたダメージの20%自分のHPを回復する。",
 			mp:25,
+			magic:function(){},
 			power:6,
 			canField:false,
 			canSentou:true,
@@ -328,6 +334,16 @@ var g=GAKUHU;
 var gakuhus=[g.onpa,g.mezame,g.kanki,g.kirakira,g.bunbun,g.tengoku];
 //魔法が発動しているかどうかgakuhusの順番
 var isMagicActive=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+var fmn=[];
+var smn=[];
+var i=0;
+for(var k in GAKUHU){
+	if(GAKUHU[k].canField)fmn[fmn.length]=k;
+	if(GAKUHU[k].canSentou)smn[smn.length]=k;
+	GAKUHU[k].number=i;
+	i++;
+}
+
 
 var ensou=[];
 //タイトルシーン
@@ -521,6 +537,7 @@ var PianoScene = function(){
 	var s=new Scene();
 	KenbansAdd(s);
 	ModoruCreator(s,160,120);
+	FieldMagicList(s);
     s.on('touchstart',function(e){
     	if(e.y<160){
     		ensou.length=0;
@@ -541,6 +558,7 @@ var MinagaraPianoScene = function(i){
     		game.popScene();
     	}
     });
+	FieldMagicList(s);
     s.n=savedata.gakuhu[i];
     s.nn=i;
     s.i=0;
@@ -682,12 +700,42 @@ var GakuhuSelectScene = function(){
 	s.setumeiLabel.text=GAKUHU.onpa.name+"<BR>消費MP"+GAKUHU.onpa.mp+"<BR>"+GAKUHU.onpa.setumei;
 	s.onenterframe=function(){
 		if(game.input.touch.downstart)game.popScene();
-		else if(game.input.touch.leftstart)game.pushScene(AutoPianoScene(this.iti));
-		else if(game.input.touch.leftupstart)game.pushScene(MinagaraPianoScene(this.iti));
+		else if(game.input.touch.leftstart)game.replaceScene(AutoPianoScene(this.iti));
+		else if(game.input.touch.leftupstart)game.replaceScene(MinagaraPianoScene(this.iti));
 	};
 
     return s;
 };
+var FieldMagicList=function(s){
+	s.gakuhu=[];
+	for(var i=0;i<fmn.length;i++){
+		s.gakuhu[i]=new Sprite(108,18);
+		s.gakuhu[i].image=new Surface(108,18);
+		s.gakuhu[i].x=320/3+~~(i/3)*320/3;
+		s.gakuhu[i].y=17*(i%3)*2+~~(i/3)%2*17;
+		s.gakuhu[i].image.context.fillStyle="black";
+		s.gakuhu[i].image.context.strokeStyle="white";
+		RoundRect(s.gakuhu[i].image,0,0,106,17,4,1);
+		RoundRect(s.gakuhu[i].image,0,0,106,17,4,0);
+		s.gakuhu[i].image.context.fillStyle="white";
+		s.gakuhu[i].image.context.textBaseline = 'top';
+		s.gakuhu[i].image.context.font="bold 16px 'ＭＳ ゴシック'";
+		s.gakuhu[i].image.context.fillText(GAKUHU[fmn[i]].name,0,0,100);
+		s.gakuhu[i].name=fmn[i];
+		s.gakuhu[i].visible=false;
+		s.gakuhu[i].ontouchstart=function(){
+			GAKUHU[this.name].magic();
+		}
+		s.gakuhu[i].onenterframe=function(){
+	    	if(game.input.down||game.input.left||game.input.right||game.input.up)this.visible=false;
+	    	else if(isMagicActive[GAKUHU[this.name].number]) this.visible=true;
+		}
+		s.addChild(s.gakuhu[i]);
+
+	}
+};
+
+
 
 //
 var KenbansAdd=function(s){
@@ -1148,6 +1196,8 @@ var FieldAdd=function(s){
     s.mst.x=5;
     s.mst.y=320-105;
     s.addChild(s.mst);
+
+    FieldMagicList(s);
 };
 
 //枠を作る
