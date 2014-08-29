@@ -284,6 +284,12 @@ var GAKUHU={
 		}
 }
 
+//GAKUHUをループで回すための参照
+var g=GAKUHU;
+g=[g.onpa,g.mezame];
+var gakuhus=g;
+
+var ensou=[];
 //タイトルシーン
 var TitleScene = function(){
 	var s=new Scene();
@@ -471,9 +477,12 @@ var TitleScene = function(){
 var PianoScene = function(){
 	var s=new Scene();
 	KenbansAdd(s);
-	ModoruCreator(s,160,160);
+	ModoruCreator(s,160,120);
     s.on('touchstart',function(e){
-    	if(e.y<SPRITE_HEIGHT*2)game.popScene();
+    	if(e.y<160){
+    		ensou.length=0;
+    		game.popScene();
+    	}
     });
     return s;
 };
@@ -484,6 +493,7 @@ var AutoPianoScene = function(i){
     s.on('touchstart',function(e){
     	if(e.y<SPRITE_HEIGHT*2){
 			if(this.i>0)Kenbans[Kenbans.nn[GAKUHU[this.n].s[this.i-1]]].ontouchend();
+			ensou.length=0;
     		game.popScene();
     	}
     });
@@ -496,6 +506,7 @@ var AutoPianoScene = function(i){
     	if(this.i>=GAKUHU[this.n].t.length){
     		if(this.c===GAKUHU[this.n].t[this.i-1]+30){
     			Kenbans.n[GAKUHU[this.n].s[this.i-1]].ontouchend();
+    			ensou.length=0;
     			game.popScene();
     		}
     	}else if(this.c===GAKUHU[this.n].t[this.i]){
@@ -982,7 +993,15 @@ var TouchCtrl=function(s){
 		}
 	});
 	s.on('touchend',function(){
-		game.input.touch={};
+		game.input.touch.leftup   =false;
+		game.input.touch.up       =false;
+		game.input.touch.rightup  =false;
+		game.input.touch.left     =false;
+		game.input.touch.center   =false;
+		game.input.touch.right    =false;
+		game.input.touch.leftdown =false;
+		game.input.touch.down     =false;
+		game.input.touch.rightdown=false;
 	});
 }
 
@@ -1137,7 +1156,13 @@ window.onload = function() {
             this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
         	game.assets[this.sepath].clone().play();
-            console.log(this.otoname);
+        	ensou[ensou.length]=this.number;
+        	for(var i=0;i<gakuhus.length;i++){
+        		for(var j=0;j<ensou.length-gakuhus[i].s.length+1;j++){
+        			if(ensou.slice(j,j+gakuhus[i].s.length).join()===gakuhus[i].s.join()){
+        			}
+        		}
+        	}
         };
 
         sprite.ontouchend=function(){
@@ -1163,7 +1188,13 @@ window.onload = function() {
             	this.image.context.fillStyle="teal";
             	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
             	game.assets[this.sepath].clone().play();
-                console.log(this.otoname);
+            	ensou[ensou.length]=this.number;
+            	for(var i=0;i<gakuhus.length;i++){
+            		for(var j=0;j<ensou.length-gakuhus[i].s.length+1;j++){
+            			if(ensou.slice(j,j+gakuhus[i].s.length).join()===gakuhus[i].s.join()){
+            			}
+            		}
+            	}
             };
             sprite.ontouchend=function(){
             	this.image.context.fillStyle="black";
@@ -1171,11 +1202,14 @@ window.onload = function() {
             };
         }
     }
-    for(var i=0;i<13;i++)Kenbans.n[i]=Kenbans[Kenbans.nn[i]];
-
+    for(var i=0;i<13;i++){
+    	Kenbans.n[i]=Kenbans[Kenbans.nn[i]];
+    	Kenbans.n[i].number=i;
+    }
     game.replaceScene(TitleScene());
 
     };
+
 
     game.start();
 };
