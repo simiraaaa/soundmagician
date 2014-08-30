@@ -262,7 +262,12 @@ var GAKUHU={
 			setumei:"無属性:音波を飛ばして敵を攻撃する",
 			mp:0,
 			power:1,
-			magic:function(){},
+			magic:function(){
+				sentou.mg=this;
+				sentou.tl.delay(1).then(function(){
+					MessageWindowCt(["音波を飛ばした!",Enemy.damage(this.mg.power)]);
+				});
+			},
 			canField:false,
 			canSentou:true,
 			s:[0,2,4],
@@ -288,7 +293,7 @@ var GAKUHU={
 		kanki:{
 			name:"歓喜の歌",
 			setumei:"以下の効果を選択。[MP5,HP50%回復]<BR>[MP15,HP全回復]<BR>[MP0,MP50%回復]",
-			mp:5,
+			mp:0,
 			magic:function(){},
 			canField:false,
 			canSentou:true,
@@ -310,7 +315,14 @@ var GAKUHU={
 			name:"ぶんぶんぶん",
 			setumei:"無属性:蜂を操り敵を刺しまくる",
 			mp:1,
-			magic:function(){},
+			magic:function(){
+				savedata.mp-=this.mp;
+				sentou.mg=this;
+				sentou.tl.delay(1).then(function(){
+					MessageWindowCt(["蜂の大群が"+Enemy.name+"を襲う!",Enemy.damage(this.mg.power)]);
+				});
+
+			},
 			canField:false,
 			canSentou:true,
 			power:1.5,
@@ -321,6 +333,7 @@ var GAKUHU={
 			name:"天国と地獄",
 			setumei:"火属性:敵を地獄の業火で焼き尽くす。与えたダメージの20%自分のHPを回復する。",
 			mp:25,
+			type:"hi",
 			magic:function(){},
 			power:6,
 			canField:false,
@@ -342,6 +355,7 @@ var GAKUHU={
 			name:"絶望の闇",
 			setumei:"闇属性:闇のエネルギーで敵を攻撃。ダメージを与えたあと、敵の防御力を半分にする。",
 			mp:15,
+			type:"yami",
 			power:5,
 			magic:function(){},
 			canField:false,
@@ -354,6 +368,7 @@ var GAKUHU={
 			setumei:"光属性:光のエネルギーで敵を攻撃。ダメージを与えたあと、自分の防御力を二倍にする。",
 			mp:15,
 			power:5,
+			type:"hikari",
 			magic:function(){},
 			canField:false,
 			canSentou:true,
@@ -380,17 +395,84 @@ var savedata={
 		level:1,
 		maxhp:9,
 		maxmp:1,
-		defatk:5,
-		defdef:1,
 		hp:9,
 		mp:1,
 		atk:5,
 		def:1,
+		rateA:1,
+		rateD:1,
 		isDungeon:false,
 		gakuhu:["onpa","kanki","kirakira","tengoku","noroi","yami","hikari"],
-		exp:0
-}
+		exp:0,
+		expTable:1
+};
 
+
+//敵の能力、敵は同時に１体しか相手しない　２体以上なら配列でなんとかなる
+var Enemy={
+	name:"スライム",
+	hp:14,
+	atk:5,
+	def:20,
+	yami:10,
+	mizu:150,
+	hikari:50,
+	hi:1,
+	rateA:1,
+	rateD:1,
+	exp:1,
+	set:function(n,h,a,d,ra,rd,ex,AI){
+		this.name=n;
+		this.hp=h;
+		this.atk=a;
+		this.def=d;
+		this.rateA=ra;
+		this.rateD=rd;
+		this.exp=ex;
+		this.AI=AI;
+	},
+	damage:function(p,t){
+		t=t || "def";
+		p=p * savedata.atk * savedata.rateA*(0.8+Math.random()*0.4);
+		p=Math.round((1-(this[t]*this.rateD)/100)*p);
+		this.hp-=p;
+		if(this.hp<=0){
+			sentou.tl.delay(1).then(function(){sentou.mst.stack=sentou.mst.stack.concat([Enemy.name+"を倒した！",Enemy.exp+"の経験値を獲得"]);
+			savedata.exp+=Enemy.exp;
+			while(savedata.exp>=savedata.expTable){
+				savedata.level++;
+				var h=~~(Math.random()*5+8);
+				var m=~~(Math.random()*3+1);
+				var a=~~(Math.random()*3+2);
+				var d=~~(Math.random()*3);
+				savedata.expTable+=savedata.level*savedata.level;
+				savedata.maxhp+=h;
+				savedata.maxmp+=m;
+				savedata.atk+=a;
+				savedata.def+=d;
+				sentou.mst.stack=sentou.mst.stack.concat(["レベルが"+savedata.level+"に上がった!","HPの最大値が"+h+"上がった! <BR>MPの最大値が"+m+"上がった!","攻撃力が"+a+"上がった! <BR>防御力が"+d+"上がった!"]);
+
+			}
+			sentou.mswin.endFunc2=function(){sentou.isEnd=true;}});
+		}else {
+			sentou.tl.delay(1).then(function(){
+				sentou.mst.stack=sentou.mst.stack.concat(["敵の行動１","2"]);
+
+				sentou.mswin.endFunc2=function(){
+					sentou.isFight=false;
+				}
+				});
+		}
+		if(p>0){
+			return this.name+"に"+p+"のダメージ!";
+		}else if(p===0){
+			return this.name+"の防御力が高くてダメージが通らなかった!";
+		}else if(p<0){
+			return this.name+"の防御力が高くてダメージが吸収されてしまった！ <BR>"+this.name+"のHPが"+(-p)+"回復した";
+		}
+	},
+	AI:null//１ターンに一回乱数でAI[~~(Math.random()*len)]
+}
 
 var ensou=[];
 //タイトルシーン
@@ -756,7 +838,7 @@ var MuraScene=function(){
 	         ];
 	s.npcs[s.npcs.length-2].visible=false;
 	s.npcs[s.npcs.length-2].ef=function(){
-		game.pushScene(SentouScene());
+		game.pushScene(SentouScene(0,5));
 	};
 	s.npcs[s.npcs.length-1].ef=function(){
 		MessageWindowCt(["モンスタが出たぞーーー！！！！","遠くから声が聞こえる"]);
@@ -779,6 +861,14 @@ var MuraScene=function(){
     	}else{
     		if(game.input.touch.leftupstart)game.pushScene(PianoScene());
     		else if(game.input.touch.rightstart)game.pushScene(GakuhuSelectScene());
+    	}
+    	if(Enemy.hp<=0){
+    		this.npcs[0].talktext=["あなたすごいわね！"];
+    		this.npcs[1].talktext=["すごすぎるよ、おまえ！<BR>でも、また井戸からモンスターがやってくるかもしれない。","俺の予想ではこの井戸、魔界に繋がってる。","気が向いたらでいいから井戸の中を調べてきてほしい。"];
+    		this.npcs[3].talktext=["ありがとう！","でも、まだ腰が抜けて立てないの……"];
+    		this.npcs[4].talktext=["僕はまだ死にたくないから隠れてるよ……。","え？もう大丈夫だって？"];
+    		this.npcs[2].talktext=["耳が聞こえない賢者はもしかしたら、井戸から魔界に行ったのかも。"];
+    		this.npcs[this.npcs.length-2].setPosition(-5,-5);
     	}
     }
     return s;
@@ -807,20 +897,37 @@ var KenbansAllTouchEnd=function(){
 
 var sentou;
 var isSentouScene=false;
-var SentouScene=function(){
+
+//戦闘シーン
+var SentouScene=function(id,x,y){
 	MagicActiveSentouFalse();
 	var s=new Scene();
 	isSentouScene=true;
 	sentou=s;
+
+	s.addChild(WindowCreator(0,0,320,320));
+
+	s.enemyimage=new EnemyImage(id,x,y);
+	s.addChild(s.enemyimage);
 	SentouAdd();
     TouchCtrl(s);
-    MessageWindowCt(["先頭ナウ","戦闘なう","先頭ナウ","戦闘なう","先頭ナウ","戦闘なう","先頭ナウ","戦闘なう"]);
+    MessageWindowCt([Enemy.name+"が現れた!"]);
     s.onenterframe=function(){
     	if(this.isMessage){
-    		if(game.input.touch.start)MessageNext();
+    		if(game.input.touch.start){
+    			MessageNext();
+    			if(Enemy.hp<=0)this.removeChild(this.enemyimage);
+    		}
     	}else if(!this.isFight){
     		if(game.input.touch.rightstart)game.pushScene(GakuhuSelectScene());
     		if(game.input.touch.leftdownstart)game.pushScene(PianoScene());
+    	}else if(this.isEnd){
+    		isSentouScene=false;
+    		savedata.hp=savedata.maxhp;
+    		savedata.mp=savedata.maxmp;
+    		savedata.rateA=1;
+    		savedata.rateD=1;
+    		game.popScene();
     	}
     }
     return s;
@@ -872,7 +979,7 @@ var MinagaraPianoScene = function(i){
 					this.w=WindowCreator(50,150,200,25);
 					this.addChild(this.w);
 					this.w.tl.delay(30).removeFromScene();
-					this.l=new Label("間違えた！最初から！",55,155);
+					this.l=new Label("間違えた！最初からだ！",55,155);
 					this.addChild(this.l);
 					this.l.tl.delay(30).removeFromScene();
 					KenbansAllTouchEnd();
@@ -1049,7 +1156,14 @@ var SentouMagicList=function(s){
 		s.gakuhu[i].visible=false;
 		s.gakuhu[i].ontouchstart=function(){
 			sentou.isFight=true;
-			GAKUHU[this.name].magic();
+			if(GAKUHU[this.name].mp>savedata.mp){
+				sentou.tl.delay(1).then(function(){
+					sentou.isFight=false;
+					MessageWindowCt(["MPが足りない!"]);
+				});
+			}else{
+				GAKUHU[this.name].magic();
+			}
 		}
 		s.gakuhu[i].onenterframe=function(){
 			if(sentou.isFight)this.visible=false;
@@ -1099,15 +1213,11 @@ var Player = enchant.Class.create(Sprite, {
         this.image = image;
         this.x = 8;
         this.y = 0;
-        this.atk = 1;
-        this.hp = 1;
         this.canWalk = true;
 
         this.jyoutai = JYOUTAI.Idle;
         this.direction = 0;
         this.animCount = 1;
-        this.damageFlag = false;
-        this.jewels = [];
 
         this.collideWith = [];
         this.control = true;
@@ -1132,19 +1242,8 @@ var Player = enchant.Class.create(Sprite, {
             case JYOUTAI.Idle:
                 this.frame = this.direction * 3 + 1;
                 this.animCount = 0;
-                // 攻撃
-                if(game.input.a){
-                    this.jyoutai = JYOUTAI.Attack;
-                    var chara = this;
-                    this.tl.delay(2).then(function(){
-                        var _x = this.x + (this.direction == 1 ? -16 : (this.direction == 2 ? 16 : 0));
-                        var _y = this.y + (this.direction == 3 ? -16 : (this.direction == 0 ? 16 : 0));
-                        var enemies = this.findEnemies(_x + 16, _y + 24);
-                        enemies.forEach(function(enemy){
-                            enemy.damage(chara.atk);
-                        });
-                    });
-                }else if(this.canWalk){
+
+                if(this.canWalk){
                     // 移動
                     this.direction = input.d;
                     if (input.x || input.y) {
@@ -1168,63 +1267,8 @@ var Player = enchant.Class.create(Sprite, {
             case JYOUTAI.Walk:
                 this.frame = this.direction * 3 + (this.animCount % 3);
                 break;
+        }
 
-            case JYOUTAI.Attack:
-                this.frame = this.direction * 3 + (this.animCount / 2 % 3) + 6;
-                if(this.animCount > 5){
-                    this.anim = 1;
-                    this.jyoutai = JYOUTAI.Idle;
-                }
-                break;
-
-            case JYOUTAI.Dead:
-                this.frame = 1;
-                if(this.animCount < 10){
-                    this.opacity = (10 - this.animCount) / 10.0;
-                }else if(this === player){
-                    var gameOver = new Sprite(189, 97);
-                    //gameOver.image = game.assets['gameover.png'];
-                    gameOver.scale(0.8, 0.8);
-                    gameOver.moveTo(-15, 32);
-                    this.scene.addChild(gameOver);
-                    stage.removeChild(this);
-                }else{
-                    var stair = new Stair(6);
-                    stair.moveTo(this.x + 8, this.y + 16);
-                    stage.insertBefore(stair, player);
-                    stage.removeChild(this);
-                    player.avoid(this);
-                }
-                break;
-        }
-        // ダメージを受けたときの点滅
-        if(this.damageFlag){
-            this.opacity = this.opacity == 0 ? 1 : 0;
-        }
-    },
-    damage : function(atk){
-        if( this.jyoutai != JYOUTAI.Damaged &&
-            this.jyoutai != JYOUTAI.Dead){
-            this.hp -= atk;
-            if(this.hp > 0){
-                this.damageFlag = true;
-                this.tl.delay(4).then(function(){
-                    this.opacity = 1;
-                    this.damageFlag = false;
-                });
-            }else{
-                this.jyoutai = JYOUTAI.Dead;
-            }
-            this.animCount = 0;
-        }
-    },
-    avoid : function(enemy){
-        var chara = this;
-        this.collideWith.some(function(v, i){
-            if(enemy == v){
-                chara.collideWith.splice(i, 1);
-            }
-        });
     },
     setPosition : function(x, y){
         this.x = x * 16 - 8;
@@ -1244,44 +1288,66 @@ var Player = enchant.Class.create(Sprite, {
 });
 
 
+//敵画像
+var EnemyImage = enchant.Class.create(enchant.Sprite, {
+  initialize : function(id,x,y){
+      enchant.Sprite.call(this, 32, 32);
+      var image = new Surface(32, 32);
+      image.draw(game.assets['images/chara6.png'], ((id % 9)+0.1) * 32, (~~(id/9)+0.2)*32, 32, 32, 0, 0, 32, 32);
+      this.image = image;
+      this.x=160;this.y=160;
+      if(y!==undefined)this.setScale(x,y);
+      else if(x!==undefined)this.setScale(x);
+  },
+  setScale:function(x,y){
+	  this.scaleX=x;
+	  if(y===undefined){
+		  this.scaleY=x;
+	  }else{
+		  this.scaleY=y;
+	  }
+  }
+});
+
 //NPC
 var NPC = enchant.Class.create(enchant.Sprite, {
-    initialize : function(id,text,x,y){
-        enchant.Sprite.call(this, 32, 32);
-        var image = new Surface(32, 32);
-        if(id<100){
-        	image.draw(game.assets['images/chara0.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
-        }else if(id>=100 && id<200){
-        	id-=100;
-        	image.draw(game.assets['images/chara5.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
-        }else if(id>=200){
-        	id-=200;
-        	image.draw(game.assets['images/chara6.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
-        }
-        this.image = image;
-        this.talktext=text || ["……。"];
-        if(y!==undefined)this.setPosition(x, y);
-        player.collideWith.push(this);
-    },
-    setPosition : function(x, y){
-        this.x = x * 16 - 8;
-        this.y = y * 16 - 16;
-        return this;
-    },
-    onenterframe : function(){
-        if(this.startTalk()){
-        	MessageWindowCt(this.talktext);
-        	if(this.ef)scene.mswin.endFunc2=this.ef;
-        }
-    },
-    startTalk : function(){
-        // プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
-        return  (player.x == this.x && player.y == this.y - 32 && game.input.down) ||
-                (player.x == this.x + 16 && player.y == this.y && game.input.left) ||
-                (player.x == this.x - 16 && player.y == this.y && game.input.right) ||
-                (player.x == this.x && player.y == this.y + 16 && game.input.up);
-    }
+  initialize : function(id,text,x,y){
+      enchant.Sprite.call(this, 32, 32);
+      var image = new Surface(32, 32);
+      if(id<100){
+      	image.draw(game.assets['images/chara0.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
+      }else if(id>=100 && id<200){
+      	id-=100;
+      	image.draw(game.assets['images/chara5.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
+      }else if(id>=200){
+      	id-=200;
+      	image.draw(game.assets['images/chara6.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
+      }
+      this.image = image;
+      this.talktext=text || ["……。"];
+      if(y!==undefined)this.setPosition(x, y);
+      player.collideWith.push(this);
+  },
+  setPosition : function(x, y){
+      this.x = x * 16 - 8;
+      this.y = y * 16 - 16;
+      return this;
+  },
+  onenterframe : function(){
+      if(this.startTalk()){
+      	MessageWindowCt(this.talktext);
+      	if(this.ef)scene.mswin.endFunc2=this.ef;
+      }
+  },
+  startTalk : function(){
+      // プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
+      return  (player.x == this.x && player.y == this.y - 32 && game.input.down) ||
+              (player.x == this.x + 16 && player.y == this.y && game.input.left) ||
+              (player.x == this.x - 16 && player.y == this.y && game.input.right) ||
+              (player.x == this.x && player.y == this.y + 16 && game.input.up);
+  }
 });
+
 
 //宝箱
 var Takara = enchant.Class.create(enchant.Sprite, {
@@ -1374,7 +1440,7 @@ var Ido = enchant.Class.create(enchant.Sprite, {
         	if(savedata.gakuhu[savedata.gakuhu.length-1]==="bunbun" && savedata.level>1){
         		MessageWindowCt(["どうやら魔界につながっているらしい","どうする？"]);
         		scene.mswin.endFunc=function(){
-        			YesNo("入る","入らない",function(){},function(){MessageWindowCt(["あとにしよう"]);})
+        			YesNo("入る","入らない",function(){MessageWindowCt(["開発中のようだ…………"]);},function(){MessageWindowCt(["あとにしよう"]);})
         		};
         	}else{
         		MessageWindowCt(["暗くて様子がわからない"]);
@@ -1451,6 +1517,7 @@ var MessageWindowCt=function(text,s){
 	s.mst.stack=text;
 	s.mst.text=text[0];
 	s.mswin.visible=true;
+	s.mscount=0;
 };
 //メッセージを次に進める.なかったら消す。
 var MessageNext=function(s){
@@ -1685,7 +1752,7 @@ var SentouAdd=function(s){
 
 
 
-	s.addChild(WindowCreator(0,0,320,320));
+
   s.stwin=WindowCreator(320/3*2+30,320/3+30,78,78);
   s.stwin.label=new Label("HP:"+savedata.hp+"<BR> <BR> <BR>MP:"+savedata.mp,s.stwin.x+5,s.stwin.y+7);
   s.stwin.onenterframe=function(){
@@ -1939,8 +2006,7 @@ window.onload = function() {
 		game.input.touch.rightdownstart=false;
 	});
 
-    game.replaceScene(MuraScene());
-    game.pushScene(SentouScene());
+    game.replaceScene(TitleScene());
 
     };
 
