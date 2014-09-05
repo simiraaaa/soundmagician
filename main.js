@@ -408,9 +408,10 @@ var savedata={
 };
 
 
-//敵の能力、敵は同時に１体しか相手しない　２体以上なら配列でなんとかなる
+//敵の能力、敵は同時に１体しか相手しない　２体以上なら配列かクラス
 var Enemy={
 	name:"スライム",
+	maxhp:14,
 	hp:14,
 	atk:5,
 	def:20,
@@ -423,6 +424,7 @@ var Enemy={
 	exp:1,
 	set:function(n,h,a,d,ra,rd,ex,AI){
 		this.name=n;
+		this.maxhp=h;
 		this.hp=h;
 		this.atk=a;
 		this.def=d;
@@ -431,36 +433,103 @@ var Enemy={
 		this.exp=ex;
 		this.AI=AI;
 	},
+	setAI:function(f){
+		this.AI[this.AI.length]=f;
+	},
+	clearAI:function(){
+		this.AI.length=0;
+	},
+	DefaultAI:{
+		1:function(){var that=Enemy;
+	    	that.message=[that.name+"の攻撃!",that.Attack()];
+		},
+		2:function(){var that=Enemy;
+			if(that.rateD<2)that.message=[that.name+"は守りのオーラを強化した。",function(){that.rateD*=2; return (that.rateD===1)?that.name+"の防御力と全体性が元に戻った":that.name+"の防御力と全体性が2倍になった!";}];
+			else that.DefaultAI[1]();
+		},
+		4:function(){var that=Enemy;
+			if(that.rateA<2)that.message=[that.name+"は力のオーラを強化した。",function(){that.rateA*=2; return (that.rateA===1)?that.name+"の攻撃力が元に戻った":that.name+"の攻撃力が2倍になった!";}];
+			else that.DefaultAI[1]();
+		},
+		8:function(){var that=Enemy;
+			if(savedata.rateD>=1)that.message=[that.name+"は守りのオーラを侵食してきた。",function(){savedata.rateD/=2; return (savedata.rateD===1)?"防御力が元に戻った":"防御力が半分になった";}];
+			else that.DefaultAI[1]();
+		},
+		16:function(){var that=Enemy;
+			if(savedata.rateA>=1)that.message=[that.name+"は力のオーラを侵食してきた。",function(){savedata.rateA/=2; return (savedata.rateA===1)?"攻撃力が元に戻った":"攻撃力が半分になった";}];
+			else that.DefaultAI[1]();
+		},
+		32:function(){var that=Enemy;
+			if(that.rateD<2&&that.rateA<2){
+				that.message=[that.name+"は守りのオーラを強化した。",function(){if(that.rateD<2){that.rateD*=2; return (that.rateD===1)?that.name+"の防御力と全体性が元に戻った":that.name+"の防御力と全体性が2倍になった!";}else{ return "しかし、何も起こらなかった。";}}];
+				that.message=[that.name+"は力のオーラを強化した。",function(){if(that.rateA<2){that.rateA*=2; return (that.rateA===1)?that.name+"の攻撃力が元に戻った":that.name+"の攻撃力が2倍になった!";}else{ return "しかし、何も起こらなかった。";}}];
+			}else{
+				that.DefaultAI[1]();
+			}
+		},
+		64:function(){var that=Enemy;
+			if(that.rateD<2&&that.rateA<2){
+				that.message=[that.name+"は守りのオーラを侵食してきた。",function(){if(savedata.rateD>=1){savedata.rateD/=2; return (savedata.rateD===1)?"防御力が元に戻った":"防御力が半分になった";}else{ return "防御力はもう下がらない!";}}];
+				that.message=[that.name+"は力のオーラを強化した。",function(){if(savedata.rateA>=1){savedata.rateA/=2; return (savedata.rateA===1)?"攻撃力が元に戻った":"攻撃力が半分になった";}else{ return "攻撃力はもう下がらない!";}}];
+			}else{
+				that.DefaultAI[1]();
+			}
+		},
+		128:function(){var that=Enemy;
+			if(that.hp<that.maxhp){
+				that.message=[function(){var h=that.hp; that.hp+=~~(that.maxhp*0.1); if(that.hp>that.maxhp)that.hp=that.maxhp; return that.name+"はHPを"+(that.hp-h)+"回復した";}];
+			}else{
+				that.DefaultAI[1]();
+			}
+		}
+	},
+	setDefaultAI:function(v){//全部セットする場合はこんな感じ(1+2+4+8+16+32+64+128)
+		//1 通常攻撃
+		//2  防御アップ
+		//4  攻撃アップ
+		//8  防御ダウン
+		//16 攻撃ダウン
+		//32 防御攻撃アップ同時
+		//64 防御攻撃ダウン同時
+		//128 HP回復
+		for(k in this.DefaultAI){
+			if(k&v===k){this.AI[this.AI.length]=this.DefaultAI[k];
+			console.log(this.DefaultAI[k]);}
+		}
+	},
 	damage:function(p,t){
 		t=t || "def";
 		p=p * savedata.atk * savedata.rateA*(0.8+Math.random()*0.4);
-		p=Math.round((1-(this[t]*this.rateD)/100)*p);
+		p=Math.floor((1-(this[t]*this.rateD)/100)*p);
 		this.hp-=p;
+		if(this.hp>this.maxhp)this.hp=this.maxhp;
+		var s = sentou;
 		if(this.hp<=0){
-			sentou.tl.delay(1).then(function(){sentou.mst.stack=sentou.mst.stack.concat([Enemy.name+"を倒した！",Enemy.exp+"の経験値を獲得"]);
-			savedata.exp+=Enemy.exp;
-			while(savedata.exp>=savedata.expTable){
-				savedata.level++;
-				var h=~~(Math.random()*5+8);
-				var m=~~(Math.random()*3+1);
-				var a=~~(Math.random()*3+2);
-				var d=~~(Math.random()*3);
-				savedata.expTable+=savedata.level*savedata.level;
-				savedata.maxhp+=h;
-				savedata.maxmp+=m;
-				savedata.atk+=a;
-				savedata.def+=d;
-				sentou.mst.stack=sentou.mst.stack.concat(["レベルが"+savedata.level+"に上がった!","HPの最大値が"+h+"上がった! <BR>MPの最大値が"+m+"上がった!","攻撃力が"+a+"上がった! <BR>防御力が"+d+"上がった!"]);
+			s.tl.delay(1).then(function(){
+				var ms=this.mst;
+				ms.txtAdd([Enemy.name+"を倒した！",Enemy.exp+"の経験値を獲得"]);
+				var sv=savedata;
+				sv.exp+=Enemy.exp;
+				while(sv.exp>=sv.expTable){
+					sv.level++;
+					var h=~~(Math.random()*5+8);
+					var m=~~(Math.random()*3+1);
+					var a=~~(Math.random()*3+2);
+					var d=~~(Math.random()*3);
+					sv.expTable+=sv.level*sv.level;
+					sv.maxhp+=h;
+					sv.maxmp+=m;
+					sv.atk+=a;
+					sv.def+=d;
+					ms.txtAdd(["レベルが"+sv.level+"に上がった!","HPの最大値が"+h+"上がった! <BR>MPの最大値が"+m+"上がった!","攻撃力が"+a+"上がった! <BR>防御力が"+d+"上がった!"]);
 
-			}
-			sentou.mswin.endFunc2=function(){sentou.isEnd=true;}});
-		}else {
-			sentou.tl.delay(1).then(function(){
-				sentou.mst.stack=sentou.mst.stack.concat(["敵の行動１","2"]);
-
-				sentou.mswin.endFunc2=function(){
-					sentou.isFight=false;
 				}
+				this.mswin.endFunc2=function(){sentou.isEnd=true;}
+			});
+		}else {
+			s.tl.delay(1).then(function(){
+				Enemy.AI[~~(Math.random()*Enemy.AI.length)]();
+				this.mst.txtAdd(Enemy.message);
 				});
 		}
 		if(p>0){
@@ -471,8 +540,35 @@ var Enemy={
 			return this.name+"の防御力が高くてダメージが吸収されてしまった！ <BR>"+this.name+"のHPが"+(-p)+"回復した";
 		}
 	},
-	AI:null//１ターンに一回乱数でAI[~~(Math.random()*len)]
-}
+	message:[],
+	Attack:function(p){
+		p=p || 1;
+		p=p * this.atk * this.rateA*(0.8+Math.random()*0.4);
+		p=Math.floor((1-(savedata.def*savedata.rateD)/100)*p);
+		sentou.p=p;
+		if(savedata.hp-p<=0){
+		sentou.tl.delay(1).then(function(){
+			this.mst.stack[this.mst.stack.length]="あなたは死にました。";
+			this.mswin.endFunc2=function(){sentou.isEnd=true;}
+		});
+		}
+		if(p>0){
+			return function(){var sv =savedata; sv.hp-=sentou.p;if(sv.hp<=0)sv.hp=0; return sentou.p+"のダメージを受けた!";};
+		}else if(p===0){
+			return "ダメージを受けなかった。";
+		}else if(p<0){
+			return function(){var sv =savedata; sv.hp-=sentou.p;if(sv.hp>sv.maxhp)sv.hp=sv.maxhp; return "防御力が高くてHPが"+(-sentou.p)+"回復した!";};
+		}
+	},
+	AI:[
+		function(){var that=Enemy;
+	    	that.message=[that.name+"の攻撃!",that.Attack()];
+		},
+	    function(){
+	    	Enemy.message=[Enemy.name+"はプルプルしている。"];
+		}
+		]
+};
 
 var ensou=[];
 //タイトルシーン
@@ -882,17 +978,18 @@ var MuraScene=function(){
 
 
 var MagicActiveAllFalse=function(){
-	for(var i=0;i<isMagicActive.length;i++)	isMagicActive[i]=0;
+	for(var i = 0, is = isMagicActive, len = is.length ; i<len ; i++) is[i] = 0;
 };
 
 var MagicActiveSentouFalse=function(){
-	for(var i=0;i<gakuhus.length;i++)	{
-		if(gakuhus[i].canSentou)isMagicActive[i]=0;
+	for(var i=0, is=isMagicActive, arr=gakuhus, len=arr.length ;i<len;i++)	{
+		if(arr[i].canSentou)is[i]=0;
 	}
 };
 
 var KenbansAllTouchEnd=function(){
-	for(var i=0;i<13;i++)Kenbans.n[i].ontouchend();
+	var k=Kenbans;
+	for(var i=0;i<13;i++)k.n[i].ontouchend();
 };
 
 var sentou;
@@ -912,22 +1009,27 @@ var SentouScene=function(id,x,y){
 	SentouAdd();
     TouchCtrl(s);
     MessageWindowCt([Enemy.name+"が現れた!"]);
+    s.g=game;
+    s.t=game.input.touch;
     s.onenterframe=function(){
+    	var g=game;
+    	var t=g.input.touch;
     	if(this.isMessage){
-    		if(game.input.touch.start){
+    		if(t.start){
     			MessageNext();
     			if(Enemy.hp<=0)this.removeChild(this.enemyimage);
     		}
-    	}else if(!this.isFight){
-    		if(game.input.touch.rightstart)game.pushScene(GakuhuSelectScene());
-    		if(game.input.touch.leftdownstart)game.pushScene(PianoScene());
-    	}else if(this.isEnd){
+    	}else if(!this.isEnd){
+    		if(t.rightstart)g.pushScene(GakuhuSelectScene());
+    		if(t.leftdownstart)g.pushScene(PianoScene());
+    	}else{
+    		var sv=savedata;
     		isSentouScene=false;
-    		savedata.hp=savedata.maxhp;
-    		savedata.mp=savedata.maxmp;
-    		savedata.rateA=1;
-    		savedata.rateD=1;
-    		game.popScene();
+    		sv.hp=sv.maxhp;
+    		sv.mp=sv.maxmp;
+    		sv.rateA=1;
+    		sv.rateD=1;
+    		g.popScene();
     	}
     }
     return s;
@@ -967,12 +1069,13 @@ var MinagaraPianoScene = function(i){
     s.i=0;
     s.el=ensou.length;
     s.onenterframe=function(){
-    	if(GAKUHU[this.n].s.length>this.i){
+    	var ga=GAKUHU;
+    	if(ga[this.n].s.length>this.i){
 
-    		Kenbans.n[GAKUHU[this.n].s[this.i]].setRed();
+    		Kenbans.n[ga[this.n].s[this.i]].setRed();
 
 			if(this.el<ensou.length){
-				if(ensou[ensou.length-1]===GAKUHU[this.n].s[this.i]){
+				if(ensou[ensou.length-1]===ga[this.n].s[this.i]){
 					this.i++;
 					this.el=ensou.length;
 				}else{
@@ -1011,20 +1114,20 @@ var AutoPianoScene = function(i){
     s.nn=i;
     s.i=0;
     s.onenterframe=function(){
-
-    	if(this.i>=GAKUHU[this.n].t.length){
-    		if(this.c===GAKUHU[this.n].t[this.i-1]+30){
+    	var ga=GAKUHU;
+    	if(this.i>=ga[this.n].t.length){
+    		if(this.c===ga[this.n].t[this.i-1]+30){
         		KenbansAllTouchEnd();
     			ensou.length=0;
     			isMagicActive=[].concat(this.copied);
     			game.popScene();
     		}
-    	}else if(this.c===GAKUHU[this.n].t[this.i]){
+    	}else if(this.c===ga[this.n].t[this.i]){
     		if(this.i>0){
-    			Kenbans.n[GAKUHU[this.n].s[this.i-1]].ontouchend();
+    			Kenbans.n[ga[this.n].s[this.i-1]].ontouchend();
     		}
-    		Kenbans.n[GAKUHU[this.n].s[this.i]].ontouchstart();
-			Kenbans.n[GAKUHU[this.n].s[this.i]].setRed();
+    		Kenbans.n[ga[this.n].s[this.i]].ontouchstart();
+			Kenbans.n[ga[this.n].s[this.i]].setRed();
     		this.i++;
     	}
     	this.c++;
@@ -1059,7 +1162,7 @@ var GakuhuSelectScene = function(){
 	ModoruCreator(s,x,y);
 
 	s.gakuhu=[];
-	for(var i=0;i<savedata.gakuhu.length;i++){
+	for(var i=0,ga=GAKUHU, svg=savedata.gakuhu, len=svg.length;i<len;i++){
 		s.gakuhu[i]=new Sprite(108,18);
 		s.gakuhu[i].image=new Surface(108,18);
 		s.gakuhu[i].x=320/3*2;
@@ -1072,28 +1175,29 @@ var GakuhuSelectScene = function(){
 		s.gakuhu[i].image.context.fillStyle="white";
 		s.gakuhu[i].image.context.textBaseline = 'top';
 		s.gakuhu[i].image.context.font="bold 16px 'ＭＳ ゴシック'";
-		s.gakuhu[i].image.context.fillText(GAKUHU[savedata.gakuhu[i]].name,0,0,100);
+		s.gakuhu[i].image.context.fillText(ga[svg[i]].name,0,0,100);
 		s.gakuhu[i].number=i;
 
 		s.gakuhu[i].ontouchstart=function(){
-			s.gakuhu[s.iti].image.context.fillStyle="black";
-			s.gakuhu[s.iti].image.context.strokeStyle="white";
-			RoundRect(s.gakuhu[s.iti].image,0,0,106,17,4,1);
-			RoundRect(s.gakuhu[s.iti].image,0,0,106,17,4,0);
-			s.gakuhu[s.iti].image.context.fillStyle="white";
-			s.gakuhu[s.iti].image.context.textBaseline = 'top';
-			s.gakuhu[s.iti].image.context.font="bold 16px 'ＭＳ ゴシック'";
-			s.gakuhu[s.iti].image.context.fillText(GAKUHU[savedata.gakuhu[s.iti]].name,0,0,100);
+			var ga=GAKUHU, svg=savedata.gakuhu, sg=s.gakuhu[s.iti];
+			sg.image.context.fillStyle="black";
+			sg.image.context.strokeStyle="white";
+			RoundRect(sg.image,0,0,106,17,4,1);
+			RoundRect(sg.image,0,0,106,17,4,0);
+			sg.image.context.fillStyle="white";
+			sg.image.context.textBaseline = 'top';
+			sg.image.context.font="bold 16px 'ＭＳ ゴシック'";
+			sg.image.context.fillText(ga[svg[s.iti]].name,0,0,100);
 			s.iti=this.number;
-			s.gakuhu[s.iti].image.context.fillStyle="#000055";
-			s.gakuhu[s.iti].image.context.strokeStyle="white";
-			RoundRect(s.gakuhu[s.iti].image,0,0,106,17,4,1);
-			RoundRect(s.gakuhu[s.iti].image,0,0,106,17,4,0);
-			s.gakuhu[s.iti].image.context.fillStyle="white";
-			s.gakuhu[s.iti].image.context.textBaseline = 'top';
-			s.gakuhu[s.iti].image.context.font="bold 16px 'ＭＳ ゴシック'";
-			s.gakuhu[s.iti].image.context.fillText(GAKUHU[savedata.gakuhu[s.iti]].name,0,0,100);
-			s.setumeiLabel.text=GAKUHU[savedata.gakuhu[this.number]].name+"<BR>消費MP"+GAKUHU[savedata.gakuhu[this.number]].mp+"<BR>"+GAKUHU[savedata.gakuhu[this.number]].setumei;
+			this.image.context.fillStyle="#000055";
+			this.image.context.strokeStyle="white";
+			RoundRect(this.image,0,0,106,17,4,1);
+			RoundRect(this.image,0,0,106,17,4,0);
+			this.image.context.fillStyle="white";
+			this.image.context.textBaseline = 'top';
+			this.image.context.font="bold 16px 'ＭＳ ゴシック'";
+			this.image.context.fillText(ga[svg[s.iti]].name,0,0,100);
+			s.setumeiLabel.text=ga[svg[this.number]].name+"<BR>消費MP"+ga[svg[this.number]].mp+"<BR>"+ga[svg[this.number]].setumei;
 		}
 
 		s.addChild(s.gakuhu[i]);
@@ -1130,7 +1234,8 @@ var FieldMagicList=function(s){
 			GAKUHU[this.name].magic();
 		}
 		s.gakuhu[i].onenterframe=function(){
-	    	if(game.input.down||game.input.left||game.input.right||game.input.up)this.visible=false;
+			var ipt=game.input;
+	    	if(ipt.down||ipt.left||ipt.right||ipt.up)this.visible=false;
 	    	else if(isMagicActive[GAKUHU[this.name].number]) this.visible=true;
 		}
 		s.addChild(s.gakuhu[i]);
@@ -1155,10 +1260,8 @@ var SentouMagicList=function(s){
 		s.gakuhu[i].name=smn[i];
 		s.gakuhu[i].visible=false;
 		s.gakuhu[i].ontouchstart=function(){
-			sentou.isFight=true;
 			if(GAKUHU[this.name].mp>savedata.mp){
 				sentou.tl.delay(1).then(function(){
-					sentou.isFight=false;
 					MessageWindowCt(["MPが足りない!"]);
 				});
 			}else{
@@ -1166,7 +1269,7 @@ var SentouMagicList=function(s){
 			}
 		}
 		s.gakuhu[i].onenterframe=function(){
-			if(sentou.isFight)this.visible=false;
+			if(sentou.isMessage)this.visible=false;
 			else if(isMagicActive[GAKUHU[this.name].number]) this.visible=true;
 		}
 		s.addChild(s.gakuhu[i]);
@@ -1178,8 +1281,9 @@ var SentouMagicList=function(s){
 
 //
 var KenbansAdd=function(s){
-	for(var i=0;i<8;i++)s.addChild(Kenbans[Kenbans.name[i]]);
-    for(var i=0;i<7;i++)if(Kenbans.names[i])s.addChild(Kenbans[Kenbans.names[i]]);
+	var k=Kenbans;
+	for(var i=0;i<8;i++)s.addChild(k[k.name[i]]);
+    for(var i=0;i<7;i++)if(k.names[i])s.addChild(k[k.names[i]]);
 };
 
 var ModoruCreator=function(s,x,y){
@@ -1224,22 +1328,23 @@ var Player = enchant.Class.create(Sprite, {
     },
     onenterframe : function(){
         var input = { x:0, y:0, d:this.direction };
-        if (game.input.up ) {
+        var gin=game.input,jyo=JYOUTAI;
+        if (gin.up ) {
             input.d = this.control ? 3 : 0;
             input.y = this.control ?-1 : 1;
-        } else if (game.input.down) {
+        } else if (gin.down) {
             input.d = this.control ? 0 : 3;
             input.y = this.control ? 1 :-1;
-        } else if (game.input.left) {
+        } else if (gin.left) {
             input.d = this.control ? 1 : 2;
             input.x = this.control ? -1: 1;
-        } else if (game.input.right) {
+        } else if (gin.right) {
             input.d = this.control ? 2 : 1;
             input.x = this.control ? 1 :-1;
         }
         this.animCount ++;
         switch(this.jyoutai){
-            case JYOUTAI.Idle:
+            case jyo.Idle:
                 this.frame = this.direction * 3 + 1;
                 this.animCount = 0;
 
@@ -1250,13 +1355,13 @@ var Player = enchant.Class.create(Sprite, {
                         var _x = this.x + input.x * 16;
                         var _y = this.y + input.y * 16;
                         var enemies = this.findEnemies(_x + 16, _y + 24);
-
-                        if (-8 <= _x && _x < map.width && -16 <= _y && _y < map.height &&
-                            !map.hitTest(_x + 16, _y + 16) && enemies.length < 1) {
-                            this.jyoutai = JYOUTAI.Walk;
+                        var m=map;
+                        if (-8 <= _x && _x < m.width && -16 <= _y && _y < m.height &&
+                            !m.hitTest(_x + 16, _y + 16) && enemies.length < 1) {
+                            this.jyoutai = jyo.Walk;
                             this.tl.moveTo(_x, _y, 1).then(function(){
                                 this.animCount = 0;
-                                this.jyoutai = JYOUTAI.Idle;
+                                this.jyoutai = jyo.Idle;
                             });
 
                         }
@@ -1264,7 +1369,7 @@ var Player = enchant.Class.create(Sprite, {
                 }
                 break;
 
-            case JYOUTAI.Walk:
+            case jyo.Walk:
                 this.frame = this.direction * 3 + (this.animCount % 3);
                 break;
         }
@@ -1325,8 +1430,10 @@ var NPC = enchant.Class.create(enchant.Sprite, {
       }
       this.image = image;
       this.talktext=text || ["……。"];
+      this.pl=player;
+      this.i=game.input;
       if(y!==undefined)this.setPosition(x, y);
-      player.collideWith.push(this);
+      this.pl.collideWith.push(this);
   },
   setPosition : function(x, y){
       this.x = x * 16 - 8;
@@ -1334,17 +1441,17 @@ var NPC = enchant.Class.create(enchant.Sprite, {
       return this;
   },
   onenterframe : function(){
-      if(this.startTalk()){
+      if(this.startTalk()&&(this.pl.canWalk)){
       	MessageWindowCt(this.talktext);
       	if(this.ef)scene.mswin.endFunc2=this.ef;
       }
   },
   startTalk : function(){
       // プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
-      return  (player.x == this.x && player.y == this.y - 32 && game.input.down) ||
-              (player.x == this.x + 16 && player.y == this.y && game.input.left) ||
-              (player.x == this.x - 16 && player.y == this.y && game.input.right) ||
-              (player.x == this.x && player.y == this.y + 16 && game.input.up);
+      return  (this.pl.x == this.x && this.pl.y == this.y - 32 && this.i.down) ||
+              (this.pl.x == this.x + 16 && this.pl.y == this.y && this.i.left) ||
+              (this.pl.x == this.x - 16 && this.pl.y == this.y && this.i.right) ||
+              (this.pl.x == this.x && this.pl.y == this.y + 16 && this.i.up);
   }
 });
 
@@ -1358,7 +1465,9 @@ var Takara = enchant.Class.create(enchant.Sprite, {
         this.image = image;
         if(y!==undefined)this.setPosition(x, y);
         this.item=item;
-        player.collideWith.push(this);
+        this.pl=player;
+        this.i=game.input;
+        this.pl.collideWith.push(this);
     },
     setPosition : function(x, y){
         this.x = x * 16 ;
@@ -1368,12 +1477,12 @@ var Takara = enchant.Class.create(enchant.Sprite, {
     onenterframe : function(){
     	for(var i=0;i<savedata.gakuhu.length;i++){
     		if(this.item===savedata.gakuhu[i]){
-    			player.collideWith.splice(player.collideWith.indexOf(this),1);
+    			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
     			stage.removeChild(this);
     		}
     	}
-        if(this.isItemGet()){
-			player.collideWith.splice(player.collideWith.indexOf(this),1);
+        if(this.isItemGet()&&(this.pl.canWalk)){
+			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
 			MessageWindowCt([GAKUHU[this.item].name+"の楽譜を手に入れた!"]);
 			if(this.ef)scene.mswin.endFunc2=this.ef;
 			var i=savedata.gakuhu.length;
@@ -1384,10 +1493,10 @@ var Takara = enchant.Class.create(enchant.Sprite, {
     },
     isItemGet : function(){
         // プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
-        return  (player.x == this.x - 8 && player.y == this.y - 32 && game.input.down) ||
-                (player.x == this.x + 8 && player.y == this.y - 16 && game.input.left) ||
-                (player.x == this.x - 24 && player.y == this.y -16  && game.input.right) ||
-                (player.x == this.x - 8 && player.y == this.y  && game.input.up);
+        return  (this.pl.x == this.x - 8 && this.pl.y == this.y - 32 && this.i.down) ||
+                (this.pl.x == this.x + 8 && this.pl.y == this.y - 16 && this.i.left) ||
+                (this.pl.x == this.x - 24 && this.pl.y == this.y -16  && this.i.right) ||
+                (this.pl.x == this.x - 8 && this.pl.y == this.y  && this.i.up);
     }
 });
 
@@ -1400,7 +1509,9 @@ var Kanban = enchant.Class.create(enchant.Sprite, {
         this.image = image;
         this.talktext=text || ["……。"];
         if(y!==undefined)this.setPosition(x, y);
-        player.collideWith.push(this);
+        this.pl=player;
+        this.i=game.input;
+        this.pl.collideWith.push(this);
     },
     setPosition : function(x, y){
         this.x = x * 16 ;
@@ -1409,15 +1520,15 @@ var Kanban = enchant.Class.create(enchant.Sprite, {
     },
     onenterframe : function(){
         if(this.startTalk()){
-        	MessageWindowCt(this.talktext);
+        	if(this.pl.canWalk)MessageWindowCt(this.talktext);
         }
     },
     startTalk : function(){
     	// プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
-        return  (player.x == this.x - 8 && player.y == this.y - 32 && game.input.down) ||
-                (player.x == this.x + 8 && player.y == this.y - 16 && game.input.left) ||
-                (player.x == this.x - 24 && player.y == this.y -16  && game.input.right) ||
-                (player.x == this.x - 8 && player.y == this.y  && game.input.up);
+        return  (this.pl.x == this.x - 8 && this.pl.y == this.y - 32 && this.i.down) ||
+                (this.pl.x == this.x + 8 && this.pl.y == this.y - 16 && this.i.left) ||
+                (this.pl.x == this.x - 24 && this.pl.y == this.y -16  && this.i.right) ||
+                (this.pl.x == this.x - 8 && this.pl.y == this.y  && this.i.up);
     }
 });
 
@@ -1428,7 +1539,9 @@ var Ido = enchant.Class.create(enchant.Sprite, {
         image.draw(game.assets['images/map1.png'], 5 * 16, 12*16, 16, 16, 0, 0, 16, 16);
         this.image = image;
         if(y!==undefined)this.setPosition(x, y);
-        player.collideWith.push(this);
+        this.pl=player;
+        this.i=game.input;
+        this.pl.collideWith.push(this);
     },
     setPosition : function(x, y){
         this.x = x * 16 ;
@@ -1436,7 +1549,7 @@ var Ido = enchant.Class.create(enchant.Sprite, {
         return this;
     },
     onenterframe : function(){
-        if(this.startTalk()){
+        if(this.startTalk()&&(this.pl.canWalk)){
         	if(savedata.gakuhu[savedata.gakuhu.length-1]==="bunbun" && savedata.level>1){
         		MessageWindowCt(["どうやら魔界につながっているらしい","どうする？"]);
         		scene.mswin.endFunc=function(){
@@ -1449,15 +1562,16 @@ var Ido = enchant.Class.create(enchant.Sprite, {
     },
     startTalk : function(){
     	// プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
-        return  (player.x == this.x - 8 && player.y == this.y - 32 && game.input.down) ||
-                (player.x == this.x + 8 && player.y == this.y - 16 && game.input.left) ||
-                (player.x == this.x - 24 && player.y == this.y -16  && game.input.right) ||
-                (player.x == this.x - 8 && player.y == this.y  && game.input.up);
+        return  (this.pl.x == this.x - 8 && this.pl.y == this.y - 32 && this.i.down) ||
+                (this.pl.x == this.x + 8 && this.pl.y == this.y - 16 && this.i.left) ||
+                (this.pl.x == this.x - 24 && this.pl.y == this.y -16  && this.i.right) ||
+                (this.pl.x == this.x - 8 && this.pl.y == this.y  && this.i.up);
     }
 });
 
 //はい　いいえ
 var YesNo=function(ytext,ntext,yFunc,nFunc){
+	player.canWalk=false;
 	var s=scene;
 	s.yes=new Sprite(108,21);
 	s.yes.image=new Surface(108,21);
@@ -1474,10 +1588,15 @@ var YesNo=function(ytext,ntext,yFunc,nFunc){
 	s.yes.Func=yFunc;
 	s.yes.ontouchstart=function(){
 		this.tl.delay(1).then(function(){
+			player.canWalk=true;
 			this.Func();
 			scene.removeChild(this.no);
 			scene.removeChild(this);
+			delete this.no,this;
 		});
+	}
+	s.yes.onenterframe=function(){
+		player.canWalk=false;
 	}
 	s.no=new Sprite(108,21);
 	s.no.image=new Surface(108,21);
@@ -1494,9 +1613,11 @@ var YesNo=function(ytext,ntext,yFunc,nFunc){
 	s.no.Func=nFunc;
 	s.no.ontouchstart=function(){
 		this.tl.delay(1).then(function(){
+			player.canWalk=true;
 			this.Func();
 			scene.removeChild(this.yes);
 			scene.removeChild(this);
+			delete this.yes,this;
 		});
 	}
 	s.no.yes=s.yes;
@@ -1515,7 +1636,7 @@ var MessageWindowCt=function(text,s){
 	s.isMessage=true;
 	player.canWalk=false;
 	s.mst.stack=text;
-	s.mst.text=text[0];
+	s.mst.text=(typeof text[0]==="function")?text[0]():text[0];
 	s.mswin.visible=true;
 	s.mscount=0;
 };
@@ -1528,8 +1649,8 @@ var MessageNext=function(s){
 		s.mst.text="";
 		s.mst.stack=null;
 		s.mscount=0;
-		s.isMessage=false;
 		player.canWalk=true;
+		s.isMessage=false;
 		s.mswin.visible=false;
 		if(s.mswin.endFunc2){
 			s.mswin.endFunc2();
@@ -1537,37 +1658,38 @@ var MessageNext=function(s){
 		}
 
 	}else{
-		s.mst.text=s.mst.stack[s.mscount];
+		s.mst.text=(typeof s.mst.stack[s.mscount]==="function" )?s.mst.stack[s.mscount]():s.mst.stack[s.mscount];
 		if(s.mswin.endFunc&&(s.mst.stack.length<=s.mscount+1)){
 			s.mswin.endFunc();
 			s.mswin.endFunc=null;
 		}
 	}
 }
-
 //スクロール用にまとめるやつ
 var Grouping=function(children,s){
 	s=s || scene;
 	stage = new Group();
-	for(var i=0;i<children.length;i++){
+	var st=stage;
+	for(var i=0,len=children.length;i<len;i++){
 		if(children[i] instanceof Array){
-			for(var j=0;j<children[i].length;j++){
-				stage.addChild(children[i][j]);
+			for(var j=0,len2=children[i].length;j<len2;j++){
+				st.addChild(children[i][j]);
 			}
 		}else {
-			stage.addChild(children[i]);
+			st.addChild(children[i]);
 		}
 	}
-	stage.onenterframe=Scroll;
-    s.addChild(stage);
+	st.onenterframe=Scroll;
+    s.addChild(st);
 }
 
 //mapスクロール
 var Scroll=function (){
-	var x = Math.min((game.width  - 16) / 2 - player.x, 0);
-    var y = Math.min((game.height - 16) / 2 - player.y, 0);
-    x = Math.max(game.width,  x + map.width)  - map.width;
-    y = Math.max(game.height, y + map.height) - map.height;
+	var m=map, g=game;
+	var x = Math.min((g.width  - 16) / 2 - player.x, 0);
+    var y = Math.min((g.height - 16) / 2 - player.y, 0);
+    x = Math.max(g.width,  x + m.width)  - m.width;
+    y = Math.max(g.height, y + m.height) - m.height;
     stage.x = x;
     stage.y = y;
 }
@@ -1579,90 +1701,93 @@ var TouchCtrl=function(s){
 	else s=s || scene;
 
 	s.on('touchstart',function(e){
-		game.input.touch.start   =true;
+		var t=game.input.touch;
+		t.start   =true;
 		var size=320/3;
 		if(e.x <size){
 			if(e.y <size){
-				game.input.touch.leftupstart=true;
-				game.input.touch.leftup=true;
+				t.leftupstart=true;
+				t.leftup=true;
 			}else if(e.y <size*2){
-				game.input.touch.leftstart=true;
-				game.input.touch.left=true;
+				t.leftstart=true;
+				t.left=true;
 			}else{
-				game.input.touch.leftdownstart=true;
-				game.input.touch.leftdown=true;
+				t.leftdownstart=true;
+				t.leftdown=true;
 			}
 		}else if(e.x < size*2){
 			if(e.y <size){
-				game.input.touch.upstart=true;
-				game.input.touch.up=true;
+				t.upstart=true;
+				t.up=true;
 			}else if(e.y <size*2){
-				game.input.touch.centerstart=true;
-				game.input.touch.center=true;
+				t.centerstart=true;
+				t.center=true;
 			}else{
-				game.input.touch.downstart=true;
-				game.input.touch.down=true;
+				t.downstart=true;
+				t.down=true;
 			}
 		}else{
 			if(e.y <size){
-				game.input.touch.rightupstart=true;
-				game.input.touch.rightup=true;
+				t.rightupstart=true;
+				t.rightup=true;
 			}else if(e.y <size*2){
-				game.input.touch.rightstart=true;
-				game.input.touch.right=true;
+				t.rightstart=true;
+				t.right=true;
 			}else{
-				game.input.touch.rightdownstart=true;
-				game.input.touch.rightdown=true;
+				t.rightdownstart=true;
+				t.rightdown=true;
 			}
 		}
 	});
 	s.on('touchmove',function(e){
 		var size=320/3;
-		game.input.touch.leftup   =false;
-		game.input.touch.up       =false;
-		game.input.touch.rightup  =false;
-		game.input.touch.left     =false;
-		game.input.touch.center   =false;
-		game.input.touch.right    =false;
-		game.input.touch.leftdown =false;
-		game.input.touch.down     =false;
-		game.input.touch.rightdown=false;
+		var t=game.input.touch;
+		t.leftup   =false;
+		t.up       =false;
+		t.rightup  =false;
+		t.left     =false;
+		t.center   =false;
+		t.right    =false;
+		t.leftdown =false;
+		t.down     =false;
+		t.rightdown=false;
 		if(e.x <size){
 			if(e.y <size){
-				game.input.touch.leftup=true;
+				t.leftup=true;
 			}else if(e.y <size*2){
-				game.input.touch.left=true;
+				t.left=true;
 			}else{
-				game.input.touch.leftdown=true;
+				t.leftdown=true;
 			}
 		}else if(e.x < size*2){
 			if(e.y <size){
-				game.input.touch.up=true;
+				t.up=true;
 			}else if(e.y <size*2){
-				game.input.touch.center=true;
+				t.center=true;
 			}else{
-				game.input.touch.down=true;
+				t.down=true;
 			}
 		}else{
 			if(e.y <size){
-				game.input.touch.rightup=true;
+				t.rightup=true;
 			}else if(e.y <size*2){
-				game.input.touch.right=true;
+				t.right=true;
 			}else{
-				game.input.touch.rightdown=true;
+				t.rightdown=true;
 			}
 		}
 	});
 	s.on('touchend',function(){
-		game.input.touch.leftup   =false;
-		game.input.touch.up       =false;
-		game.input.touch.rightup  =false;
-		game.input.touch.left     =false;
-		game.input.touch.center   =false;
-		game.input.touch.right    =false;
-		game.input.touch.leftdown =false;
-		game.input.touch.down     =false;
-		game.input.touch.rightdown=false;
+		var t=game.input.touch;
+		t.leftup   =false;
+		t.up       =false;
+		t.rightup  =false;
+		t.left     =false;
+		t.center   =false;
+		t.right    =false;
+		t.leftdown =false;
+		t.down     =false;
+		t.rightdown=false;
 	});
 }
 
@@ -1680,7 +1805,8 @@ var FieldAdd=function(s){
     s.stwin=WindowCreator(320/3*2+30,320/3+30,78,78);
     s.stwin.label=new Label("HP:"+savedata.hp+"<BR> <BR> <BR>MP:"+savedata.mp,s.stwin.x+5,s.stwin.y+7);
     s.stwin.onenterframe=function(){
-    	if(game.input.down||game.input.left||game.input.right||game.input.up){
+    	var ipt=game.input;
+    	if(ipt.down||ipt.left||ipt.right||ipt.up){
     		this.visible=false;
     		this.label.visible=false;
     	}else{
@@ -1704,7 +1830,8 @@ var FieldAdd=function(s){
     s.minigakuhu.x=320-50;
     s.minigakuhu.y=160;
     s.minigakuhu.onenterframe=function(){
-    	if(game.input.down||game.input.left||game.input.right||game.input.up)this.visible=false;
+    	var ipt=game.input;
+    	if(ipt.down||ipt.left||ipt.right||ipt.up)this.visible=false;
     	else this.visible=true;
     };
     s.addChild(s.minigakuhu);
@@ -1722,10 +1849,7 @@ var FieldAdd=function(s){
     }
     s.miniken.x=50;
     s.miniken.y=50;
-    s.miniken.onenterframe=function(){
-    	if(game.input.down||game.input.left||game.input.right||game.input.up)this.visible=false;
-    	else this.visible=true;
-    };
+    s.miniken.onenterframe=s.minigakuhu.onenterframe;
     s.addChild(s.miniken);
 
     s.mswin=WindowCreator(0,320-111,320,110);
@@ -1802,13 +1926,16 @@ var SentouAdd=function(s){
   s.addChild(s.mst);
 
   SentouMagicList(s);
-};
 
+  //s.mst.getLen=function(){return this.stack.length;};
+  s.mst.txtAdd=function(t){ this.stack=this.stack.concat(t)};
+
+};
 
 
 //枠を作る
 var WindowCreator=function(x,y,width,height){
-	c=new Sprite(width+1,height+1);
+	var c=new Sprite(width+1,height+1);
     c.image=new Surface(width+10,height+10);
     c.x=x;
     c.y=y;
@@ -1821,19 +1948,19 @@ var WindowCreator=function(x,y,width,height){
 };
 
 //角丸
-var RoundRect= function(canvas, x, y, width, height, radius, isFill) {
+var RoundRect= function(c, x, y, width, height, radius, isFill) {
     var l = x + radius;
     var r = x + width - radius;
     var t = y + radius;
     var b = y + height - radius;
-
-    canvas.context.beginPath();
-    canvas.context.arc(l, t, radius,     -Math.PI, -Math.PI*0.5, false);  // 左上
-    canvas.context.arc(r, t, radius, -Math.PI*0.5,            0, false);  // 右上
-    canvas.context.arc(r, b, radius,            0,  Math.PI*0.5, false);  // 右下
-    canvas.context.arc(l, b, radius,  Math.PI*0.5,      Math.PI, false);  // 左下
-    canvas.context.closePath();
-    if(isFill)canvas.context.fill();else canvas.context.stroke();
+    c = c.context;
+    c.beginPath();
+    c.arc(l, t, radius,     -Math.PI, -Math.PI*0.5, false);  // 左上
+    c.arc(r, t, radius, -Math.PI*0.5,            0, false);  // 右上
+    c.arc(r, b, radius,            0,  Math.PI*0.5, false);  // 右下
+    c.arc(l, b, radius,  Math.PI*0.5,      Math.PI, false);  // 左下
+    c.closePath();
+    if(isFill)c.fill();else c.stroke();
 };
 
 
@@ -1888,7 +2015,7 @@ window.onload = function() {
         };
 
 	for(var i=0;i<8;i++){
-        sprite=Kenbans[Kenbans.name[i]];
+        var sprite=Kenbans[Kenbans.name[i]];
         sprite.image = new Surface(SPRITE_WIDTH+1, SPRITE_HEIGHT+1);
         // canvas 描画
         sprite.image.context.fillStyle = "white";
@@ -1934,7 +2061,7 @@ window.onload = function() {
     }
     for(var i=0;i<7;i++){
         if(Kenbans.names[i]){
-            sprite=Kenbans[Kenbans.names[i]];
+            var sprite=Kenbans[Kenbans.names[i]];
             sprite.image =  new Surface(SPRITE_WIDTH, ~~SPRITE_HEIGHT/2);
 
             // canvas 描画
@@ -1976,8 +2103,6 @@ window.onload = function() {
         }
     }
 
-    Kenbans.ks=function(k){return k.ontouchstart;};
-    Kenbans.ke=function(k){return k.ontouchend;};
 
     for(var i=0;i<13;i++){
     	Kenbans.n[i]=Kenbans[Kenbans.nn[i]];
@@ -1990,23 +2115,26 @@ window.onload = function() {
 
 
     game.on('exitframe',function(){
+    	var t=game.input;
     	for(var i=0;i<13;i++){
-   	    	game.input[Kenbans.KL[i]+'buttondown']=false;
-   	    	game.input[Kenbans.KL[i]+'buttonup']=false;
+   	    	t[Kenbans.KL[i]+'buttondown']=false;
+   	    	t[Kenbans.KL[i]+'buttonup']=false;
    	    }
-		game.input.touch.start   =false;
-		game.input.touch.leftupstart   =false;
-		game.input.touch.upstart       =false;
-		game.input.touch.rightupstart  =false;
-		game.input.touch.leftstart     =false;
-		game.input.touch.centerstart   =false;
-		game.input.touch.rightstart    =false;
-		game.input.touch.leftdownstart =false;
-		game.input.touch.downstart     =false;
-		game.input.touch.rightdownstart=false;
+		t=game.input.touch;
+
+		t.start   =false;
+		t.leftupstart   =false;
+		t.upstart       =false;
+		t.rightupstart  =false;
+		t.leftstart     =false;
+		t.centerstart   =false;
+		t.rightstart    =false;
+		t.leftdownstart =false;
+		t.downstart     =false;
+		t.rightdownstart=false;
 	});
 
-    game.replaceScene(TitleScene());
+    game.replaceScene(MuraScene());
 
     };
 
