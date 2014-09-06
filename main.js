@@ -279,8 +279,9 @@ var GAKUHU={
 			mp:0,
 			magic:function(){scene.tl.delay(1).then(function(){
 				if(scene.isDream){
-					if(savedata.gakuhu[savedata.gakuhu.length-1]==="mezame")game.replaceScene(MuraScene());
-					else MessageWindowCt(["……","何も起こらなかった。","もう少し探索してみよう"]);
+					if(savedata.gakuhu[savedata.gakuhu.length-1]==="mezame"){
+						SuperReplaceScene(MuraScene(),true);
+					}else MessageWindowCt(["……","何も起こらなかった。","もう少し探索してみよう"]);
 				}else{
 					MessageWindowCt(["……","どうやらここは現実のようだ。"]);
 				}
@@ -413,7 +414,7 @@ var Enemy={
 	name:"スライム",
 	maxhp:14,
 	hp:14,
-	atk:5,
+	atk:3,
 	def:20,
 	yami:10,
 	mizu:150,
@@ -571,6 +572,44 @@ var Enemy={
 };
 
 var ensou=[];
+
+
+//シーンを移動するときの
+var SuperReplaceScene=function(s,white){
+	var ss=new Scene();
+	var siro=new Sprite(321,321);
+	siro.image=new Surface(321,321);
+	var c=siro.image.context;
+	c.fillStyle=white?"white":"black";
+	c.fillRect(0,0,320,320);
+	siro.opacity=0;
+	siro.s=s;
+	siro.ss=new Scene();
+	siro.tl.tween({
+		time:45,
+		opacity:1
+	}).then(function(){
+		game.popScene();
+		game.replaceScene(this.s);
+		game.pushScene(this.ss);
+		this.ss.addChild(this);
+	}).tween({
+		time:45,
+		opacity:0
+	}).then(function(){
+		game.popScene();
+	});
+	ss.addChild(siro);
+	game.pushScene(ss);
+};
+
+
+
+
+
+
+
+
 //タイトルシーン
 var TitleScene = function(){
 	var s=new Scene();
@@ -2134,7 +2173,7 @@ window.onload = function() {
 		t.rightdownstart=false;
 	});
 
-    game.replaceScene(MuraScene());
+    game.replaceScene(TitleScene());
 
     };
 
