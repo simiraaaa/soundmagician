@@ -602,6 +602,34 @@ var SuperReplaceScene=function(s,white){
 	ss.addChild(siro);
 	game.pushScene(ss);
 };
+//戦闘シーンへ
+var SuperPushScene=function(s){
+	var ss=new Scene();
+	var siro=new Sprite(21,21);
+	siro.image=new Surface(21,21);
+	siro.image.context.fillRect(0,0,320,320);
+	siro.s=s;
+	siro.x=150;
+	siro.y=150;
+	siro.ss=new Scene();
+	siro.tl.tween({
+		time:5,
+		scaleX:16,
+		scaleY:16
+	}).then(function(){
+		game.popScene();
+		game.pushScene(this.s);
+		game.pushScene(this.ss);
+		this.ss.addChild(this);
+	}).delay(4).tween({
+		time:3,
+		opacity:0
+	}).then(function(){
+		game.popScene();
+	});
+	ss.addChild(siro);
+	game.pushScene(ss);
+};
 
 
 
@@ -973,7 +1001,7 @@ var MuraScene=function(){
 	         ];
 	s.npcs[s.npcs.length-2].visible=false;
 	s.npcs[s.npcs.length-2].ef=function(){
-		game.pushScene(SentouScene(0,5));
+		SuperPushScene(SentouScene(0,5));
 	};
 	s.npcs[s.npcs.length-1].ef=function(){
 		MessageWindowCt(["モンスタが出たぞーーー！！！！","遠くから声が聞こえる"]);
@@ -2173,7 +2201,7 @@ window.onload = function() {
 		t.rightdownstart=false;
 	});
 
-    game.replaceScene(TitleScene());
+    game.replaceScene(MuraScene());
 
     };
 
