@@ -1,9 +1,4 @@
-/*
- *
- * Label改造
- *
- *
- */
+/* Label改造 */
 
 
 /**
@@ -2573,7 +2568,7 @@ window.onload = function() {
 		t.rightdownstart=false;
 	});
 
-    game.replaceScene(MakaiEnterScene());
+    game.replaceScene(TitleScene());
 
     };
 
