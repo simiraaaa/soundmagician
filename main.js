@@ -434,6 +434,17 @@ var GAKUHU={
 			s:[0,2,3,2,3,5,3,5,7,5,7,8,7,8,10,8,7,5,7,5,3,2,7,0,2,3,5,7,7,7,8,8,7,7,5,5,5,3,5,3,3,2,2,2,0],
 			t:[0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76,80,84,88,96,112,120,136,144,160,168,192,216,240,280,288,312,328,336,352,360,376,384,408,424,432]
 		},
+		save:{
+			name:"神の記憶",
+			setumei:"今の状態をセーブする。",
+			mp:0,
+			magic:function(){},
+			power:0,
+			canField:true,
+			canSentou:false,
+			s:[7,0,3,8,9,5,11,7,12],
+			t:[0,4,8,12,16,20,24,28,32]
+		},
 }
 
 //魔法が発動しているかどうかgakuhusの順番
@@ -644,7 +655,7 @@ var SuperReplaceScene=function(s,white){
 	siro.s=s;
 	siro.ss=new Scene();
 	siro.tl.tween({
-		time:45,
+		time:15,
 		opacity:1
 	}).then(function(){
 		game.popScene();
@@ -652,7 +663,7 @@ var SuperReplaceScene=function(s,white){
 		game.pushScene(this.ss);
 		this.ss.addChild(this);
 	}).tween({
-		time:45,
+		time:15,
 		opacity:0
 	}).then(function(){
 		game.popScene();
@@ -870,12 +881,14 @@ var TitleScene = function(){
     TouchCtrl();
 	MagicActiveAllFalse();
     MessageWindowCt(["ここはどこだろう……。","……とりあえず、抜け出そう。"]);
+    s.git=game.input.touch;
     s.onenterframe=function(){
     	if(this.isMessage){
-    		if(game.input.touch.start)MessageNext();
+    		if(this.git.start)MessageNext();
     	}else{
-    		if(game.input.touch.leftupstart)game.pushScene(PianoScene());
-    		else if(game.input.touch.rightstart)game.pushScene(GakuhuSelectScene());
+    		if(this.git.leftupstart)game.pushScene(PianoScene());
+    		else if(this.git.rightstart)game.pushScene(GakuhuSelectScene());
+    		else if(this.git.rightdownstart)game.pushScene(TuyosaScene());
     	}
     }
     return s;
@@ -886,7 +899,7 @@ var MuraScene=function(){
 	MagicActiveAllFalse();
 	var s=new Scene();
 	scene=s;
-    player=Player();
+  player=Player();
 	player.setPosition(9,9);
 	map = new Map(16, 16);
 	map.image = game.assets['images/map1.png'];
@@ -1072,30 +1085,289 @@ var MuraScene=function(){
 		npcs[4].talktext=["僕はまだ死にたくないから隠れてるよ……。"];
 		npcs[npcs.length-2].setPosition(24,23).visible=true;
 	}
-    Grouping([map,s.npcs,player]);
-    FieldAdd();
-    TouchCtrl();
-    MessageWindowCt(["ん……？","夢か。","あれ？でもさっきの鍵盤と楽譜がある。","まあいいか。"]);
-    s.onenterframe=function(){
-    	if(this.isMessage){
-    		if(game.input.touch.start)MessageNext();
-    	}else{
-    		if(game.input.touch.leftupstart)game.pushScene(PianoScene());
-    		else if(game.input.touch.rightstart)game.pushScene(GakuhuSelectScene());
-    	}
-    	if(Enemy.hp<=0){
-    		this.npcs[0].talktext=["あなたすごいわね！"];
-    		this.npcs[1].talktext=["すごすぎるよ、おまえ！<BR>でも、また井戸からモンスターがやってくるかもしれない。","俺の予想ではこの井戸、魔界に繋がってる。","気が向いたらでいいから井戸の中を調べてきてほしい。"];
-    		this.npcs[3].talktext=["ありがとう！","でも、まだ腰が抜けて立てないの……"];
-    		this.npcs[4].talktext=["僕はまだ死にたくないから隠れてるよ……。","え？もう大丈夫だって？"];
-    		this.npcs[2].talktext=["耳が聞こえない賢者はもしかしたら、井戸から魔界に行ったのかも。"];
-    		this.npcs[this.npcs.length-2].setPosition(-5,-5);
-    	}
-    }
-    return s;
+  Grouping([map,s.npcs,player]);
+  FieldAdd();
+  TouchCtrl();
+  MessageWindowCt(["ん……？","夢か。","あれ？でもさっきの鍵盤と楽譜がある。","まあいいか。"]);
+  s.git=game.input.touch;
+  s.onenterframe=function(){
+  	if(this.isMessage){
+  		if(this.git.start)MessageNext();
+  	}else{
+  		if(this.git.leftupstart)game.pushScene(PianoScene());
+  		else if(this.git.rightstart)game.pushScene(GakuhuSelectScene());
+  		else if(this.git.rightdownstart)game.pushScene(TuyosaScene());
+  	}
+  	if(Enemy.hp<=0){
+  		this.npcs[0].talktext=["あなたすごいわね！"];
+  		this.npcs[1].talktext=["すごすぎるよ、おまえ！<BR>でも、また井戸からモンスターがやってくるかもしれない。","俺の予想ではこの井戸、魔界に繋がってる。","気が向いたらでいいから井戸の中を調べてきてほしい。"];
+  		this.npcs[3].talktext=["ありがとう！","でも、まだ腰が抜けて立てないの……"];
+  		this.npcs[4].talktext=["僕はまだ死にたくないから隠れてるよ……。","え？もう大丈夫だって？"];
+  		this.npcs[2].talktext=["耳が聞こえない賢者はもしかしたら、井戸から魔界に行ったのかも。"];
+  		this.npcs[this.npcs.length-2].setPosition(-5,-5);
+  	}
+  }
+  return s;
 
 
 
+};
+
+
+
+//井戸に入った
+var MakaiEnterScene=function(back){
+	MagicActiveAllFalse();
+	var s=new Scene();
+	scene=s;
+  player=Player();
+	if(back) player.setPosition(9,1);
+	else player.setPosition(9,9);
+	map = new Map(16, 16);
+	map.image = game.assets['images/map1.png'];
+	map.loadData([
+	    [228,228,228,228,228,228,228,228,6,225,6,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,6,225,6,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,6,209,6,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,6,209,6,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,6,209,6,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,6,209,6,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,6,22,22,209,22,22,22,6,228,228,228,228,228,228],
+	    [228,228,228,228,228,6,22,33,209,209,209,209,209,6,228,228,228,228,228,228],
+	    [228,228,228,228,228,6,209,209,33,209,209,209,209,6,228,228,228,228,228,228],
+	    [228,228,228,228,228,6,209,209,209,209,209,33,209,6,228,228,228,228,228,228],
+	    [228,228,228,228,228,6,209,33,209,209,209,209,209,6,228,228,228,228,228,228],
+	    [228,228,228,228,228,6,209,33,209,209,33,209,6,22,228,228,228,228,228,228],
+	    [228,228,228,228,228,22,6,209,209,209,33,209,6,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,22,22,22,22,22,22,22,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228],
+	    [228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228]
+	],[
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+	    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1]
+	]);
+	map.collisionData = [
+	    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,1,1,1,0,1,1,1,1,0,0,0,0,0,0],
+	    [0,0,0,0,0,1,1,1,0,0,0,0,0,1,0,0,0,0,0,0],
+	    [0,0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,0,0],
+	    [0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+	    [0,0,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,0,0],
+	    [0,0,0,0,0,1,0,1,0,0,1,0,1,1,0,0,0,0,0,0],
+	    [0,0,0,0,0,1,1,0,0,0,1,0,1,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+	];
+
+
+	s.npcs=[
+	          new Takara("save",9,6)
+	         ];
+
+
+  Grouping([map,s.npcs,player]);
+  FieldAdd();
+  TouchCtrl();
+  s.pl=player;
+  s.git=game.input.touch;
+  s.onenterframe=function(){
+  	if(this.isMessage){
+  		if(this.git.start)MessageNext();
+  	}else{
+  		if(this.git.leftupstart)game.pushScene(PianoScene());
+  		else if(this.git.rightstart)game.pushScene(GakuhuSelectScene());
+  		else if(this.git.rightdownstart)game.pushScene(TuyosaScene());
+  		else if(this.pl.getPositionY()<=0)SuperReplaceScene(DungeonScene(0,5));
+  	}
+  }
+  return s;
+};
+
+var DungeonScene=function(i,j){
+
+	MagicActiveAllFalse();
+	var s=new Scene();
+	scene=s;
+	player=Player();
+	s.pl=player;
+	s.git=game.input.touch;
+	map = new Map(16, 16);
+	map.image = game.assets['images/map1.png'];
+
+	switch (i) {
+	case 0:
+		switch (j) {
+		case 0: player.setPosition(9,1); break;
+		case 1: player.setPosition(16,1); break;
+		case 2: player.setPosition(17,1); break;
+		case 3: player.setPosition(18,15);break;
+		case 4: player.setPosition(18,17);break;
+		case 5: player.setPosition(9,18);break;
+		case 6: player.setPosition(1,17);break;
+		case 7: player.setPosition(1,15);break;
+		case 8: player.setPosition(2,1);break;
+		case 9: player.setPosition(3,1);break;
+		}
+		//6 5 7
+		//3   4
+		//1 0 2
+		s.FloorReplace=function(){
+			if(this.pl.getPositionX()===9&&this.pl.getPositionY()===0)SuperReplaceScene(DungeonScene(5,0),false);
+			else if(this.pl.getPositionX()===16&&this.pl.getPositionY()===0)SuperReplaceScene(DungeonScene(7,0),false);
+			else if(this.pl.getPositionX()===17&&this.pl.getPositionY()===0)SuperReplaceScene(DungeonScene(7,1),false);
+			else if(this.pl.getPositionX()===19&&this.pl.getPositionY()===15)SuperReplaceScene(DungeonScene(4,0),false);
+			else if(this.pl.getPositionX()===19&&this.pl.getPositionY()===17)SuperReplaceScene(DungeonScene(2,0),false);
+			else if(this.pl.getPositionX()==9&&this.pl.getPositionY()===19)SuperReplaceScene(MakaiEnterScene(true),false);
+			else if(this.pl.getPositionX()===0&&this.pl.getPositionY()===17)SuperReplaceScene(DungeonScene(1,0),false);
+			else if(this.pl.getPositionX()===0&&this.pl.getPositionY()===15)SuperReplaceScene(DungeonScene(3,0),false);
+			else if(this.pl.getPositionX()===2&&this.pl.getPositionY()===0)SuperReplaceScene(DungeonScene(6,0),false);
+			else if(this.pl.getPositionX()===3&&this.pl.getPositionY()===0)SuperReplaceScene(DungeonScene(6,1),false);
+		}
+		map.loadData([
+		    [228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228],
+		    [228,6,225,225,6,22,22,22,6,225,6,22,22,22,22,6,225,225,6,228],
+		    [228,6,225,225,6,228,228,228,6,225,6,228,228,228,228,6,225,225,6,228],
+		    [228,6,225,225,6,228,228,228,6,225,6,228,228,228,228,6,225,225,6,228],
+		    [228,6,225,225,6,228,228,228,6,225,6,228,228,228,228,6,225,225,6,228],
+		    [228,6,225,225,6,228,228,228,6,225,6,228,228,228,228,6,225,225,6,228],
+		    [228,6,225,225,6,228,228,228,6,225,6,228,228,228,228,6,225,225,6,228],
+		    [228,6,225,225,6,228,228,228,6,225,6,228,228,228,228,6,225,225,6,228],
+		    [228,6,225,225,6,228,228,228,6,225,6,228,228,228,228,6,225,225,6,228],
+		    [228,6,225,225,6,228,228,228,6,225,6,228,228,228,228,6,225,225,6,228],
+		    [228,6,225,225,6,228,228,228,6,225,6,228,228,228,228,6,225,225,6,228],
+		    [228,6,225,225,22,22,22,22,22,225,22,22,22,22,22,22,225,225,6,228],
+		    [228,6,225,225,225,225,225,225,225,225,225,225,225,225,225,225,225,225,6,228],
+		    [228,6,225,225,225,225,225,225,225,225,225,225,225,225,225,225,225,225,6,228],
+		    [228,22,22,22,22,22,22,225,225,225,225,225,22,22,22,22,22,22,22,228],
+		    [228,225,225,225,225,225,225,225,225,225,225,225,225,225,225,225,225,225,225,228],
+		    [228,22,22,22,22,225,225,225,225,225,225,225,225,225,22,22,22,22,22,228],
+		    [228,225,225,209,209,209,209,209,209,209,209,209,209,209,209,209,225,225,225,228],
+		    [228,22,22,22,22,22,22,22,22,209,22,22,22,22,22,22,22,22,22,228],
+		    [228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228,228]
+		],[
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1],
+		    [185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,185,-1,-1]
+		]);
+		map.collisionData = [
+		    [0,1,0,0,1,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,0,0,1,0],
+		    [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+		    [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+		    [1,1,1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1],
+		    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+		    [1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1],
+		    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+		    [1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1],
+		    [0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0]
+		];
+		s.npcs=[];
+
+		break;
+
+	case 1:
+		//左下
+		break;
+
+	case 2:
+		//右下
+		break;
+
+	case 3:
+		//左真ん中
+		break;
+
+	case 4:
+		//右真ん中
+		break;
+
+	case 5:
+		//ラスボス
+		break;
+
+	case 6:
+		//左上
+		break;
+
+	case 7:
+		//右上
+		break;
+	}
+
+
+	Grouping([map,s.npcs,player]);
+	  FieldAdd();
+	  TouchCtrl();
+	  s.onenterframe=function(){
+	  	if(this.isMessage){
+	  		if(this.git.start)MessageNext();
+	  	}else{
+	  		if(this.git.leftupstart)game.pushScene(PianoScene());
+	  		else if(this.git.rightstart)game.pushScene(GakuhuSelectScene());
+	  		else if(this.git.rightdownstart)game.pushScene(TuyosaScene());
+	  		else this.FloorReplace();
+	  	}
+	  }
+	  return s;
 };
 
 
@@ -1137,16 +1409,14 @@ var SentouScene=function(id,x,y){
     s.g=game;
     s.t=game.input.touch;
     s.onenterframe=function(){
-    	var g=game;
-    	var t=g.input.touch;
     	if(this.isMessage){
-    		if(t.start){
+    		if(this.t.start){
     			MessageNext();
     			if(Enemy.hp<=0)this.removeChild(this.enemyimage);
     		}
     	}else if(!this.isEnd){
-    		if(t.rightstart)g.pushScene(GakuhuSelectScene());
-    		if(t.leftdownstart)g.pushScene(PianoScene());
+    		if(this.t.rightstart)this.g.pushScene(GakuhuSelectScene());
+    		if(this.t.leftdownstart)this.g.pushScene(PianoScene());
     	}else{
     		var sv=savedata;
     		isSentouScene=false;
@@ -1154,7 +1424,7 @@ var SentouScene=function(id,x,y){
     		sv.mp=sv.maxmp;
     		sv.rateA=1;
     		sv.rateD=1;
-    		g.popScene();
+    		this.g.popScene();
     	}
     }
     return s;
@@ -1193,16 +1463,17 @@ var MinagaraPianoScene = function(i){
     s.nn=i;
     s.i=0;
     s.el=ensou.length;
+    s.en=ensou;
     s.onenterframe=function(){
     	var ga=GAKUHU;
     	if(ga[this.n].s.length>this.i){
 
     		Kenbans.n[ga[this.n].s[this.i]].setRed();
 
-			if(this.el<ensou.length){
-				if(ensou[ensou.length-1]===ga[this.n].s[this.i]){
+			if(this.el<this.en.length){
+				if(this.en[this.en.length-1]===ga[this.n].s[this.i]){
 					this.i++;
-					this.el=ensou.length;
+					this.el=this.en.length;
 				}else{
 					this.w=WindowCreator(50,150,200,25);
 					this.addChild(this.w);
@@ -1211,11 +1482,15 @@ var MinagaraPianoScene = function(i){
 					this.addChild(this.l);
 					this.l.tl.delay(30).removeFromScene();
 					KenbansAllTouchEnd();
-					ensou.length=0;
+					this.en.length=0;
 					this.el=0;
 					this.i=0;
 				}
 			}
+    	}else{
+    		this.en.length=0;
+    		KenbansAllTouchEnd();
+    		game.popScene();
     	}
     };
     return s;
@@ -1238,6 +1513,7 @@ var AutoPianoScene = function(i){
     s.n=savedata.gakuhu[i];
     s.nn=i;
     s.i=0;
+    s.k=Kenbans;
     s.onenterframe=function(){
     	var ga=GAKUHU;
     	if(this.i>=ga[this.n].t.length){
@@ -1249,10 +1525,10 @@ var AutoPianoScene = function(i){
     		}
     	}else if(this.c===ga[this.n].t[this.i]){
     		if(this.i>0){
-    			Kenbans.n[ga[this.n].s[this.i-1]].ontouchend();
+    			this.k.n[ga[this.n].s[this.i-1]].ontouchend();
     		}
-    		Kenbans.n[ga[this.n].s[this.i]].ontouchstart();
-			Kenbans.n[ga[this.n].s[this.i]].setRed();
+    		this.k.n[ga[this.n].s[this.i]].ontouchstart();
+			this.k.n[ga[this.n].s[this.i]].setRed();
     		this.i++;
     	}
     	this.c++;
@@ -1338,6 +1614,30 @@ var GakuhuSelectScene = function(){
 
     return s;
 };
+
+var TuyosaScene=function(){
+	var s=new Scene();
+	TouchCtrl(s);
+	var x=160,y=0;
+	s.addChild(WindowCreator(x,y,x,x));
+	var l=new Label("",x+5,y+5);
+	l.width=140;
+	var sv=savedata;
+	l.text= "レベル : "+sv.level+
+	" <BR>最大HP : "+sv.maxhp+
+	" <BR>最大MP : "+sv.maxmp+
+	" <BR>攻撃力 : "+sv.atk+
+	" <BR>防御力 : "+sv.def+
+	" <BR> <BR>経験値あと "+(sv.expTable-sv.exp)+" <BR>でレベルアップ";
+	s.addChild(l);
+	s.onenterframe=function(){
+		if(game.input.touch.start)game.popScene();
+	};
+
+    return s;
+
+};
+
 var FieldMagicList=function(s){
 	s.gakuhu=[];
 	for(var i=0;i<fmn.length;i++){
@@ -1428,9 +1728,6 @@ var scene;
 var JYOUTAI = {
     Idle : 0,       // 立ち状態
     Walk : 1,       // 歩き状態
-    Attack : 2,     // 攻撃状態
-    Damaged : 3,    // 被撃状態
-    Dead : 4        // 死亡状態
 };
 
 //プレイヤー
@@ -1503,7 +1800,14 @@ var Player = enchant.Class.create(Sprite, {
     setPosition : function(x, y){
         this.x = x * 16 - 8;
         this.y = y * 16 - 16;
+
         return this;
+    },
+    getPositionX:function(){
+    	return (this.x+8)/16;
+    },
+    getPositionY:function(){
+    		return (this.y+16)/16;
     },
     findEnemies : function(x, y){
         var out = [];
@@ -1593,6 +1897,7 @@ var Takara = enchant.Class.create(enchant.Sprite, {
         this.pl=player;
         this.i=game.input;
         this.pl.collideWith.push(this);
+        this.isTakara=true;
     },
     setPosition : function(x, y){
         this.x = x * 16 ;
@@ -1600,12 +1905,7 @@ var Takara = enchant.Class.create(enchant.Sprite, {
         return this;
     },
     onenterframe : function(){
-    	for(var i=0;i<savedata.gakuhu.length;i++){
-    		if(this.item===savedata.gakuhu[i]){
-    			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
-    			stage.removeChild(this);
-    		}
-    	}
+
         if(this.isItemGet()&&(this.pl.canWalk)){
 			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
 			MessageWindowCt([GAKUHU[this.item].name+"の楽譜を手に入れた!"]);
@@ -1615,6 +1915,14 @@ var Takara = enchant.Class.create(enchant.Sprite, {
 			game.pushScene(AutoPianoScene(i));
 			stage.removeChild(this);
         }
+    },
+    checkData:function(){
+    	for(var i=0;i<savedata.gakuhu.length;i++){
+    		if(this.item===savedata.gakuhu[i]){
+    			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
+    			stage.removeChild(this);
+    		}
+    	}
     },
     isItemGet : function(){
         // プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
@@ -1678,7 +1986,7 @@ var Ido = enchant.Class.create(enchant.Sprite, {
         	if(savedata.gakuhu[savedata.gakuhu.length-1]==="bunbun" && savedata.level>1){
         		MessageWindowCt(["どうやら魔界につながっているらしい","どうする？"]);
         		scene.mswin.endFunc=function(){
-        			YesNo("入る","入らない",function(){MessageWindowCt(["開発中のようだ…………"]);},function(){MessageWindowCt(["あとにしよう"]);})
+        			YesNo("入る","入らない",function(){SuperReplaceScene(MakaiEnterScene(),false);},function(){MessageWindowCt(["あとにしよう"]);})
         		};
         	}else{
         		MessageWindowCt(["暗くて様子がわからない"]);
@@ -1799,9 +2107,11 @@ var Grouping=function(children,s){
 		if(children[i] instanceof Array){
 			for(var j=0,len2=children[i].length;j<len2;j++){
 				st.addChild(children[i][j]);
+				if(children[i][j].isTakara)children[i][j].checkData();
 			}
 		}else {
 			st.addChild(children[i]);
+			if(children[i].isTakara)children[i].checkData();
 		}
 	}
 	st.onenterframe=Scroll;
@@ -1927,8 +2237,8 @@ var FieldAdd=function(s){
 
 
 
-    s.stwin=WindowCreator(320/3*2+30,320/3+30,78,78);
-    s.stwin.label=new Label("HP:"+savedata.hp+"<BR> <BR> <BR>MP:"+savedata.mp,s.stwin.x+5,s.stwin.y+7);
+    s.stwin=WindowCreator(320/3*2+30,320/3*2+30,78,78);
+    s.stwin.label=new Label("強さを<BR>見る<BR>HP:"+savedata.hp+" <BR>MP:"+savedata.mp,s.stwin.x+5,s.stwin.y+7);
     s.stwin.onenterframe=function(){
     	var ipt=game.input;
     	if(ipt.down||ipt.left||ipt.right||ipt.up){
@@ -1937,7 +2247,7 @@ var FieldAdd=function(s){
     	}else{
     		this.visible=true;
     		this.label.visible=true;
-        	this.label.text="HP:"+savedata.hp+"<BR> <BR> <BR>MP:"+savedata.mp;
+        	this.label.text="強さを<BR>見る<BR>HP:"+savedata.hp+" <BR>MP:"+savedata.mp;
     	}
     };
     s.addChild(s.stwin);
@@ -2112,6 +2422,7 @@ window.onload = function() {
 		"images/map1.png");
     game.onload = function() {
 	var scene = game.rootScene;
+	game.background="black";
 
 	/*
 	 *鍵盤
@@ -2158,10 +2469,12 @@ window.onload = function() {
             this.image.context.fillRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
             this.image.context.strokeRect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
         	game.assets[this.sepath].clone().play();
-        	ensou[ensou.length]=this.number;
-        	for(var i=0;i<gakuhus.length;i++){
-        		for(var j=0;j<ensou.length-gakuhus[i].s.length+1;j++){
-        			if(ensou.slice(j,j+gakuhus[i].s.length).join()===gakuhus[i].s.join()){
+        	var en=ensou;
+        	en[en.length]=this.number;
+        	//すべての楽譜に対して演奏があってるか判定
+        	for(var i=0,ga=gakuhus,len=ga.length;i<len;i++){
+        		for(var j=0,len2=en.length-ga[i].s.length+1;j<len;j++){
+        			if(en.slice(j,j+ga[i].s.length).join()===ga[i].s.join()){
         				isMagicActive[i]=true;
         			}
         		}
@@ -2198,14 +2511,15 @@ window.onload = function() {
             sprite.otoname=Kenbans.namesj[i];
             sprite.sepath=SE_PATH[Kenbans.names[i]];
             sprite.ontouchstart=function(){
+            	var en=ensou;
             	this.image.context.fillStyle="navy";
             	this.image.context.fillRect(~~SPRITE_WIDTH*0.1, 0, SPRITE_WIDTH*0.8, ~~SPRITE_HEIGHT/2);
             	game.assets[this.sepath].clone().play();
-            	ensou[ensou.length]=this.number;
+            	en[en.length]=this.number;
             	//すべての楽譜に対して演奏があってるか判定
-            	for(var i=0;i<gakuhus.length;i++){
-            		for(var j=0;j<ensou.length-gakuhus[i].s.length+1;j++){
-            			if(ensou.slice(j,j+gakuhus[i].s.length).join()===gakuhus[i].s.join()){
+            	for(var i=0,ga=gakuhus,len=ga.length;i<len;i++){
+            		for(var j=0,len2=en.length-ga[i].s.length+1;j<len;j++){
+            			if(en.slice(j,j+ga[i].s.length).join()===ga[i].s.join()){
             				isMagicActive[i]=true;
             			}
             		}
@@ -2259,7 +2573,7 @@ window.onload = function() {
 		t.rightdownstart=false;
 	});
 
-    game.replaceScene(MuraScene());
+    game.replaceScene(MakaiEnterScene());
 
     };
 
