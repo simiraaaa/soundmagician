@@ -2226,6 +2226,7 @@ var Player = enchant.Class.create(Sprite, {
         Sprite.call(this, 32, 32);
         var image = new Surface(96, 128);
         image.draw(game.assets['images/chara0.png'], 0, 0, 96, 128, 0, 0, 96, 128);
+        ColorChange(image.context,96,128,[2,2.5,1.5],[3,3,3]);
         this.image = image;
         this.x = 8;
         this.y = 0;
@@ -2313,6 +2314,33 @@ var Player = enchant.Class.create(Sprite, {
     }
 });
 
+//to:0~5, 0:= , 1:+ , 2:- , 3:* , 4:/
+var ColorChange=function(context,w,h,rgb,rgbto){
+
+	var color=context.getImageData(0,0,w,h);
+	for(var i=0,l=color.data.length;i<l;i+=4){
+		for(var j=0;j<3;j++){
+			switch (rgbto[j]) {
+			case 0:
+				color.data[i+j]=rgb[j];
+				break;
+			case 1:
+				color.data[i+j]+=rgb[j];
+				break;
+			case 2:
+				color.data[i+j]-=rgb[j];
+				break;
+			case 3:
+				color.data[i+j]*=rgb[j];
+				break;
+			case 4:
+				color.data[i+j]/=rgb[j];
+				break;
+			}
+		}
+    }
+	context.putImageData(color,0,0);
+}
 
 //敵画像
 var EnemyImage = enchant.Class.create(enchant.Sprite, {
@@ -3066,7 +3094,7 @@ window.onload = function() {
 		t.rightdownstart=false;
 	});
 
-    game.replaceScene(MakaiEnterScene());
+    game.replaceScene(TitleScene());
 
     };
 
