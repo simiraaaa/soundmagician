@@ -487,14 +487,18 @@ var Enemy={
 	rateA:1,
 	rateD:1,
 	exp:1,
-	set:function(n,h,a,d,ra,rd,ex,AI){
+	set:function(n,h,a,d,ya,mi,hika,hi,ex,AI){
 		this.name=n;
 		this.maxhp=h;
 		this.hp=h;
 		this.atk=a;
 		this.def=d;
-		this.rateA=ra;
-		this.rateD=rd;
+		this.yami=ya;
+		this.mizu=mi;
+		this.hikari=hika;
+		this.hi=hi;
+		this.rateA=1;
+		this.rateD=1;
 		this.exp=ex;
 		this.AI=AI;
 	},
@@ -558,8 +562,7 @@ var Enemy={
 		//64 防御攻撃ダウン同時
 		//128 HP回復
 		for(k in this.DefaultAI){
-			if(k&v===k){this.AI[this.AI.length]=this.DefaultAI[k];
-			console.log(this.DefaultAI[k]);}
+			if(k&v==k)this.AI[this.AI.length]=this.DefaultAI[k];
 		}
 	},
 	damage:function(p,t){
@@ -1235,6 +1238,7 @@ var DungeonScene=function(i,j){
 		case 8: player.setPosition(2,1);break;
 		case 9: player.setPosition(3,1);break;
 		}
+		player.canSentou=true;
 		//4   3   5
 		//1,1   2,1
 		//1   0   2
@@ -1599,6 +1603,7 @@ var DungeonScene=function(i,j){
 	case 4:
 
 
+		player.canSentou=true;
 		switch (j) {
 		case 0: player.setPosition(16,28); break;
 		case 1: player.setPosition(17,28); break;
@@ -1712,6 +1717,7 @@ var DungeonScene=function(i,j){
 
 	case 5:
 
+		player.canSentou=true;
 		switch (j) {
 		case 0: player.setPosition(2,28); break;
 		case 1: player.setPosition(3,28); break;
@@ -1845,8 +1851,18 @@ var DungeonScene=function(i,j){
 };
 
 
-
-
+var EnemySet=function(v){
+	Enemy.clearAI();
+	var x=5;
+	switch (v) {
+	case 0:
+		Enemy.set("スライム", 20, 5, 20, 40, 150, 80, 0,2, [function(){Enemy.message=[Enemy.name+"はプルプルしている。"];}]);
+		Enemy.setDefaultAI(1);
+		v=0;
+		break;
+	}
+	SuperPushScene(SentouScene(v,x));
+};
 
 var MagicActiveAllFalse=function(){
 	for(var i = 0, is = isMagicActive, len = is.length ; i<len ; i++) is[i] = 0;
@@ -2218,7 +2234,7 @@ var Player = enchant.Class.create(Sprite, {
         this.jyoutai = JYOUTAI.Idle;
         this.direction = 0;
         this.animCount = 1;
-
+        this.canSentou=false;
         this.collideWith = [];
         this.control = true;
     },
@@ -2258,6 +2274,8 @@ var Player = enchant.Class.create(Sprite, {
                             this.tl.moveTo(_x, _y, 1).then(function(){
                                 this.animCount = 0;
                                 this.jyoutai = jyo.Idle;
+                                if(this.canSentou)if(Math.random()<0.05)EnemySet(0);
+
                             });
 
                         }
