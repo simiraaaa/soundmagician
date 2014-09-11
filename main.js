@@ -2340,7 +2340,37 @@ var ColorChange=function(context,w,h,rgb,rgbto){
 		}
     }
 	context.putImageData(color,0,0);
-}
+};
+
+//p 0:r<->g, 1:r<->b, 2:g<->b
+var ColorSwap=function(context,w,h,p){
+	var color=context.getImageData(0,0,w,h);
+	switch (p) {
+	case 0:
+		for(var i=0,l=color.data.length;i<l;i+=4){
+			p=color.data[i];
+			color.data[i]=color.data[i+1];
+			color.data[i+1]=p;
+		}
+		break;
+	case 1:
+		for(var i=0,l=color.data.length;i<l;i+=4){
+			p=color.data[i];
+			color.data[i]=color.data[i+2];
+			color.data[i+2]=p;
+		}
+		break;
+	case 2:
+		for(var i=0,l=color.data.length;i<l;i+=4){
+			p=color.data[i+1];
+			color.data[i+1]=color.data[i+2];
+			color.data[i+2]=p;
+		}
+		break;
+	}
+
+	context.putImageData(color,0,0);
+};
 
 //敵画像
 var EnemyImage = enchant.Class.create(enchant.Sprite, {
@@ -2352,6 +2382,7 @@ var EnemyImage = enchant.Class.create(enchant.Sprite, {
       this.x=160;this.y=160;
       if(y!==undefined)this.setScale(x,y);
       else if(x!==undefined)this.setScale(x);
+      this.c=0;
   },
   setScale:function(x,y){
 	  this.scaleX=x;
@@ -2360,6 +2391,9 @@ var EnemyImage = enchant.Class.create(enchant.Sprite, {
 	  }else{
 		  this.scaleY=y;
 	  }
+  },onenterframe:function(){
+	  this.c++;
+	  ColorSwap(this.image.context,32,32,this.c%3);
   }
 });
 
@@ -3094,7 +3128,7 @@ window.onload = function() {
 		t.rightdownstart=false;
 	});
 
-    game.replaceScene(TitleScene());
+    game.replaceScene(MakaiEnterScene());
 
     };
 
