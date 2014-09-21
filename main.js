@@ -1,4 +1,4 @@
-/* Label改造 */
+/* Label改造 */+1
 
 
 /**
@@ -250,6 +250,68 @@ var SE_PATH={
 		do2:"piano/do2.mp3",
 };
 
+var MagicList={
+	Aup:function(){
+		if(savedata.rateA>=2){
+			return "攻撃力はもう上がらない";
+		}else{
+			savedata.rateA*=2;
+			return "攻撃力が2倍になった!";
+		}
+	},
+	Dup:function(){
+		if(savedata.rateD>=2){
+			return "防御力はもう上がらない";
+		}else{
+			savedata.rateD*=2;
+			return "防御力が2倍になった!";
+		}
+	},
+	Adown:function(){
+		if(Enemy.rateA<=0.5){
+			return Enemy.name+"の攻撃力はもう下がらない";
+		}else{
+			Enemy.rateA/=2;
+			return Enemy.name+"の攻撃力が半分になった!";
+		}
+	},
+	Ddown:function(){
+			if(Enemy.rateD<=0.5){
+				return Enemy.name+"の防御力はもう下がらない";
+			}else{
+				Enemy.rateD/=2;
+				return Enemy.name+"の防御力が半分になった!";
+			}
+	},
+	HPdrain:function(v){
+		sentou.isHPdrain=false;
+		if(v<=5)return "回復できるほどダメージを与えていない";
+		var sv=savedata;
+		if(sv.hp>=sv.maxhp)return "HPは最大だ";
+		else{
+			v=~~(v*0.2);
+			if(sv.hp+v>=sv.maxhp){
+				v=sv.maxhp-sv.hp;
+			}
+			sv.hp+=v;
+		}
+		return "HPを"+v+"回復した";
+	},
+	MPdrain:function(v){
+		sentou.isMPdrain=false;
+		if(v<=34)return "回復できるほどダメージを与えていない";
+		var sv=savedata;
+		if(sv.mp>=sv.maxmp)return "MPは最大だ";
+		else{
+			v=~~(v*0.03);
+			if(sv.mp+v>=sv.maxmp){
+				v=sv.maxmp-sv.mp;
+			}
+			sv.hp+=v;
+		}
+		return "MPを"+v+"回復した";
+	}
+};
 
 var GAKUHU={
 		onpa:{
@@ -317,7 +379,6 @@ var GAKUHU={
 				sentou.tl.delay(1).then(function(){
 					MessageWindowCt(["蜂の大群が"+Enemy.name+"を襲う!",Enemy.damage(this.mg.power)]);
 				});
-
 			},
 			canField:false,
 			canSentou:true,
@@ -329,7 +390,19 @@ var GAKUHU={
 			name:"呪いの旋律",
 			setumei:"以下の効果を選択。[MP10,敵の攻撃力を半分にする]<BR>[MP10,敵の防御力を半分にする]",
 			mp:10,
-			magic:function(){},
+			magic:function(){
+				sentou.tl.delay(1).then(function(){
+					Sentaku(["MP10:敵の攻撃力を半分にする",
+					         function(){
+								savedata.mp-=10;
+								MessageWindowCt([MagicList.Adown,function(){Enemy.Turn();return Enemy.name+"の行動"}]);
+							},"MP10:敵の防御力を半分にする",
+							function(){
+								savedata.mp-=10;
+								MessageWindowCt([MagicList.Ddown,function(){Enemy.Turn();return Enemy.name+"の行動"}]);
+							}]);
+				});
+			},
 			canField:false,
 			canSentou:true,
 			s:[1,3,5,4,5,7,5,7,8,7,5,4,1,3,5,4,5,7,5,7,8,12,10,8,8,7,5,4,7,5],
@@ -339,7 +412,19 @@ var GAKUHU={
 			name:"祝福の旋律",
 			setumei:"以下の効果を選択。[MP10,自分の攻撃力を2倍にする]<BR>[MP10,自分の防御力を2倍にする]",
 			mp:10,
-			magic:function(){},
+			magic:function(){
+				sentou.tl.delay(1).then(function(){
+					Sentaku(["MP10:自分の攻撃力を2倍にする",
+					         function(){
+								savedata.mp-=10;
+								MessageWindowCt([MagicList.Aup,function(){Enemy.Turn();return Enemy.name+"の行動"}]);
+							},"MP10:自分の攻撃力を2倍にする",
+							function(){
+								savedata.mp-=10;
+								MessageWindowCt([MagicList.Dup,function(){Enemy.Turn();return Enemy.name+"の行動"}]);
+							}]);
+				});
+			},
 			canField:false,
 			canSentou:true,
 			s:[0,2,4,2,4,7,4,7,9,7,4,2,0,2,4,7,4,7,9,7,9,12,9,7,9,7,4,2,4,0],
@@ -351,7 +436,13 @@ var GAKUHU={
 			mp:15,
 			type:"yami",
 			power:5,
-			magic:function(){},
+			magic:function(){
+				savedata.mp-=this.mp;
+				sentou.mg=this;
+				sentou.tl.delay(1).then(function(){
+					MessageWindowCt([Enemy.name+"が闇に包まれた!",Enemy.damage(this.mg.power,this.mg.type),MagicList.Ddown]);
+				});
+			},
 			canField:false,
 			canSentou:true,
 			s:[5,0,5,7,8,1,12,1,10,1,8,3,7,8,7,4,0,5],
@@ -363,7 +454,13 @@ var GAKUHU={
 			mp:15,
 			power:5,
 			type:"hikari",
-			magic:function(){},
+			magic:function(){
+				savedata.mp-=this.mp;
+				sentou.mg=this;
+				sentou.tl.delay(1).then(function(){
+					MessageWindowCt([Enemy.name+"の体が光り輝き爆発した!",Enemy.damage(this.mg.power,this.mg.type),MagicList.Dup]);
+				});
+			},
 			canField:false,
 			canSentou:true,
 			s:[5,0,5,7,5,7,9,10,12,10,9,7,0,5,9,12,4,7,5],
@@ -375,7 +472,13 @@ var GAKUHU={
 			mp:15,
 			power:5,
 			type:"hi",
-			magic:function(){},
+			magic:function(){
+				savedata.mp-=this.mp;
+				sentou.mg=this;
+				sentou.tl.delay(1).then(function(){
+					MessageWindowCt(["炎の渦が"+Enemy.name+"を包む!",Enemy.damage(this.mg.power,this.mg.type),MagicList.Aup]);
+				});
+			},
 			canField:false,
 			canSentou:true,
 			s:[0,5,9,0,5,9,2,7,11,2,7,11,4,9,12,4,9,12,2,7,11,2,7,11,12],
@@ -383,11 +486,17 @@ var GAKUHU={
 		},
 		koori:{
 			name:"守護の氷",
-			setumei:"水属性:水の魔法で敵を攻撃。その後、自分の防御力を二倍にする。",
+			setumei:"水属性:水の魔法で敵を攻撃。その後、敵の攻撃力を半分にする。",
 			mp:15,
 			power:5,
 			type:"mizu",
-			magic:function(){},
+			magic:function(){
+				savedata.mp-=this.mp;
+				sentou.mg=this;
+				sentou.tl.delay(1).then(function(){
+					MessageWindowCt([Enemy.name+"に氷の刃が突き刺さる!",Enemy.damage(this.mg.power,this.mg.type),MagicList.Adown]);
+				});
+			},
 			canField:false,
 			canSentou:true,
 			s:[11,4,7,4,11,2,7,2,9,2,6,2,9,0,6,0,7],
@@ -398,7 +507,14 @@ var GAKUHU={
 			setumei:"火属性:敵を地獄の業火で焼き尽くす。与えたダメージの20%自分のHPを回復する。",
 			mp:30,
 			type:"hi",
-			magic:function(){},
+			magic:function(){
+				savedata.mp-=this.mp;
+				sentou.mg=this;
+				sentou.tl.delay(1).then(function(){
+					this.isHPdrain=true;
+					MessageWindowCt([Enemy.name+"を地獄の業火で焼き尽くした!",Enemy.damage(this.mg.power,this.mg.type)]);
+				});
+			},
 			power:8,
 			canField:false,
 			canSentou:true,
@@ -406,11 +522,18 @@ var GAKUHU={
 			t:[0,11,23,27,33,38,43,54,64,70,74,79,84,95,105,110,116,121,127,133,139,144,149,155,160,166,171,182,192,197,203,208,213,224,235,240,247,251,257,269,278,284,289,295,302,307,314,318,324]
 		},
 		menue:{
-			name:"聖なる光",
-			setumei:"光属性:聖なる光で敵を浄化する。与えたダメージの20%自分のMPを回復する。",
+			name:"光の剣",
+			setumei:"光属性:光の剣で敵を斬り刻む。与えたダメージの3%自分のMPを回復する。",
 			mp:30,
 			type:"hikari",
-			magic:function(){},
+			magic:function(){
+				savedata.mp-=this.mp;
+				sentou.mg=this;
+				sentou.tl.delay(1).then(function(){
+					this.isMPdrain=true;
+					MessageWindowCt(["無数の光の剣が"+Enemy.name+"を斬り刻む！",Enemy.damage(this.mg.power,this.mg.type)]);
+				});
+			},
 			power:8,
 			canField:false,
 			canSentou:true,
@@ -419,15 +542,51 @@ var GAKUHU={
 		},
 		moru:{
 			name:"モルダウ",
-			setumei:"水属性:流れる川の幻想で敵を飲み込む。与えたダメージの20%自分のMPを回復する。",
+			setumei:"水属性:流れる川の幻想で敵を飲み込む。与えたダメージの3%自分のMPを回復する。",
 			mp:30,
-			type:"hikari",
-			magic:function(){},
+			type:"mizu",
+			magic:function(){
+				savedata.mp-=this.mp;
+				sentou.mg=this;
+				sentou.tl.delay(1).then(function(){
+					this.isMPdrain=true;
+					MessageWindowCt([Enemy.name+"は川に流されていった……。",Enemy.damage(this.mg.power,this.mg.type)]);
+				});
+			},
 			power:8,
 			canField:false,
 			canSentou:true,
 			s:[0,2,3,2,3,5,3,5,7,5,7,8,7,8,10,8,7,5,7,5,3,2,7,0,2,3,5,7,7,7,8,8,7,7,5,5,5,3,5,3,3,2,2,2,0],
 			t:[0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76,80,84,88,96,112,120,136,144,160,168,192,216,240,280,288,312,328,336,352,360,376,384,408,424,432]
+		},
+		unmei:{
+			name:"運命",
+			setumei:"闇属性:闇属性攻撃。与えたダメージの20%自分のHPを回復する。",
+			mp:30,
+			type:"yami",
+			magic:function(){
+				savedata.mp-=this.mp;
+				sentou.mg=this;
+				sentou.tl.delay(1).then(function(){
+					this.isHPdrain=true;
+					MessageWindowCt([Enemy.name+"はどこからともなく襲い来る攻撃を受ける運命になった!",Enemy.damage(this.mg.power,this.mg.type)]);
+				});
+			},
+			power:8,
+			canField:false,
+			canSentou:true,s:[9,9,9,5,7,7,7,4,9,9,9,5,10,10,10,9,5,5,5,2,9,9,9,4,10,10,10,9,7,7,7,4,9,9,7,5,5,5,7,9,9,9,7,5,5,5,7,9,9,9,7,5,2,9,10,10,10,7],
+			t:[0,7,14,22,105,111,119,125,215,222,229,235,243,250,258,265,273,281,287,294,334,341,348,356,364,371,379,386,393,401,408,414,456,464,471,479,487,493,500,508,515,522,529,536,544,551,559,566,573,580,588,596,624,655,725,735,742,753]
+		},
+		zenon:{
+			name:"ゼノン",
+			setumei:"無属性:MPをすべて消費して攻撃する。消費したMPが多いほど威力が上がる。",
+			mp:1,
+			magic:function(){},
+			power:0,
+			canField:false,
+			canSentou:true,
+			s:[0,2,3,5,4,2,1,1,2,4,5,7,8,10,9,7,6,6,7,9,12,11,9,11,9,7,9,11,12,7,5,4,4,0,4,2,0,0],
+			t:[0,10,19,32,39,45,52,61,71,78,91,99,109,122,129,136,143,152,162,169,182,191,200,213,220,226,233,244,254,261,271,281,288,306,325,338,382,390]
 		},
 		save:{
 			name:"神の記憶",
@@ -440,8 +599,25 @@ var GAKUHU={
 			s:[7,0,3,8,9,5,11,7,12],
 			t:[0,4,8,12,16,20,24,28,32]
 		},
+		iwa:{
+			name:"岩砕き",
+			setumei:"フィールド上の岩を砕いて通れるようにする。",
+			mp:0,
+			magic:function(){
+				scene.tl.delay(1).then(function(){
+					MessageWindowCt(["フィールド上の岩に接触したとき岩が砕けるようになった。"]);
+					isIwakudaki=true;
+				});
+			},
+			power:0,
+			canField:true,
+			canSentou:false,
+			s:[2,7,11,2,7,11,2,7,11,2,7,11,12],
+			t:[0,3,5,9,12,15,17,21,23,26,30,32,34]
+		},
 }
 
+var isIwakudaki=false;
 //魔法が発動しているかどうかgakuhusの順番
 var isMagicActive=new Array(18);
 var fmn=[];
@@ -467,7 +643,7 @@ var savedata={
 		rateA:1,
 		rateD:1,
 		isDungeon:false,
-		gakuhu:["onpa","kanki","kirakira","tengoku","noroi","shuku","yami","hikari","honoo","koori","menue","moru"],
+		gakuhu:["onpa","kanki","kirakira","tengoku","noroi","shuku","yami","hikari","honoo","koori","menue","moru","iwa","zenon","bunbun","mezame","unmei"],
 		exp:0,
 		expTable:1
 };
@@ -513,7 +689,7 @@ var Enemy={
 	    	that.message=[that.name+"の攻撃!",that.Attack()];
 		},
 		2:function(){var that=Enemy;
-			if(that.rateD<2)that.message=[that.name+"は守りのオーラを強化した。",function(){that.rateD*=2; return (that.rateD===1)?that.name+"の防御力と全体性が元に戻った":that.name+"の防御力と全体性が2倍になった!";}];
+			if(that.rateD<2)that.message=[that.name+"は守りのオーラを強化した。",function(){that.rateD*=2; return (that.rateD===1)?that.name+"の防御力と全耐性が元に戻った":that.name+"の防御力と全耐性が2倍になった!";}];
 			else that.DefaultAI[1]();
 		},
 		4:function(){var that=Enemy;
@@ -530,7 +706,7 @@ var Enemy={
 		},
 		32:function(){var that=Enemy;
 			if(that.rateD<2&&that.rateA<2){
-				that.message=[that.name+"は守りのオーラを強化した。",function(){if(that.rateD<2){that.rateD*=2; return (that.rateD===1)?that.name+"の防御力と全体性が元に戻った":that.name+"の防御力と全体性が2倍になった!";}else{ return "しかし、何も起こらなかった。";}}];
+				that.message=[that.name+"は守りのオーラを強化した。",function(){if(that.rateD<2){that.rateD*=2; return (that.rateD===1)?that.name+"の防御力と全耐性が元に戻った":that.name+"の防御力と全耐性が2倍になった!";}else{ return "しかし、何も起こらなかった。";}}];
 				that.message=[that.name+"は力のオーラを強化した。",function(){if(that.rateA<2){that.rateA*=2; return (that.rateA===1)?that.name+"の攻撃力が元に戻った":that.name+"の攻撃力が2倍になった!";}else{ return "しかし、何も起こらなかった。";}}];
 			}else{
 				that.DefaultAI[1]();
@@ -595,11 +771,11 @@ var Enemy={
 				this.mswin.endFunc2=function(){sentou.isEnd=true;}
 			});
 		}else {
-			s.tl.delay(1).then(function(){
-				Enemy.AI[~~(Math.random()*Enemy.AI.length)]();
-				this.mst.txtAdd(Enemy.message);
-				});
+			Enemy.Turn(p);
 		}
+
+		console.log(savedata);
+		console.log(Enemy);
 		if(p>0){
 			return this.name+"に"+p+"のダメージ!";
 		}else if(p===0){
@@ -607,6 +783,17 @@ var Enemy={
 		}else if(p<0){
 			return this.name+"の防御力が高くてダメージが吸収されてしまった！ <BR>"+this.name+"のHPが"+(-p)+"回復した";
 		}
+	},
+	Turn:function(p){
+		sentou.tl.delay(1).then(function(){
+			if(this.isHPdrain){
+				this.mst.txtAdd(MagicList.HPdrain(p));
+			}else if(this.isMPdrain){
+				this.mst.txtAdd(MagicList.MPdrain(p));
+			}
+			Enemy.AI[~~(Math.random()*Enemy.AI.length)]();
+			this.mst.txtAdd(Enemy.message);
+		});
 	},
 	message:[],
 	Attack:function(p){
@@ -620,6 +807,9 @@ var Enemy={
 			this.mswin.endFunc2=function(){sentou.isEnd=true;}
 		});
 		}
+
+		console.log(savedata);
+		console.log(Enemy);
 		if(p>0){
 			return function(){var sv =savedata; sv.hp-=sentou.p;if(sv.hp<=0)sv.hp=0; return sentou.p+"のダメージを受けた!";};
 		}else if(p===0){
@@ -697,10 +887,6 @@ var SuperPushScene=function(s){
 	ss.addChild(siro);
 	game.pushScene(ss);
 };
-
-
-
-
 
 
 
@@ -1851,14 +2037,41 @@ var DungeonScene=function(i,j){
 };
 
 
-var EnemySet=function(v){
+var EnemySet=function(){
+	var v=null;
+	var lv=savedata.level;
+	var elvl=[2,4];
+	var ran=[];
+	for(var i=0;elvl[i]<=lv;i++){};
+
+	ran[i-1]=1.0;
+	i-=2;
+	for(;i>=0;i--){
+		ran[i]=ran[i+1]/2;
+	}
+	var mr=Math.random();
+
+	for(var i=0,len=ran.length;i<len;i++){
+		if(0===i){
+			if(ran[i]>mr){
+				v=elvl[i];
+			}
+		}else if(ran[i]>mr&&ran[i-1]<=mr){
+			v=elvl[i];
+		}
+	}
+
 	Enemy.clearAI();
+	//set:function(n,h,a,d,ya,mi,hika,hi,ex,AI)
 	var x=5;
 	switch (v) {
-	case 0:
+	case elvl[0]:
 		Enemy.set("スライム", 20, 5, 20, 40, 150, 80, 0,2, [function(){Enemy.message=[Enemy.name+"はプルプルしている。"];}]);
 		Enemy.setDefaultAI(1);
-		v=0;
+		break;
+	case elvl[1]:
+		Enemy.set("レッドスライム", 40, 10, 20, 60, 130, 60, 20,4, []);
+		Enemy.setDefaultAI(1);
 		break;
 	}
 	SuperPushScene(SentouScene(v,x));
@@ -2272,10 +2485,10 @@ var Player = enchant.Class.create(Sprite, {
                         if (-8 <= _x && _x < m.width && -16 <= _y && _y < m.height &&
                             !m.hitTest(_x + 16, _y + 16) && enemies.length < 1) {
                             this.jyoutai = jyo.Walk;
-                            this.tl.moveTo(_x, _y, 1).then(function(){
+                            this.tl.moveTo(_x, _y, 4).then(function(){
                                 this.animCount = 0;
                                 this.jyoutai = jyo.Idle;
-                                if(this.canSentou)if(Math.random()<0.05)EnemySet(0);
+                                if(this.canSentou)if(Math.random()<0.05)EnemySet();
 
                             });
 
@@ -2391,9 +2604,6 @@ var EnemyImage = enchant.Class.create(enchant.Sprite, {
 	  }else{
 		  this.scaleY=y;
 	  }
-  },onenterframe:function(){
-	  this.c++;
-	  ColorSwap(this.image.context,32,32,this.c%3);
   }
 });
 
@@ -2614,6 +2824,52 @@ var YesNo=function(ytext,ntext,yFunc,nFunc){
 }
 
 
+//魔法が以下の効果を選択の時
+var Sentaku=function(arr){
+	player.canWalk=false;
+	var s=isSentouScene?sentou:scene;
+	s.SentakuList=[];
+	arr[arr.length]="戻る";
+	arr[arr.length]=function(){};
+	for(var j=0,i=0,len=arr.length;i<len;i+=2,j++){
+		s.SentakuList[j]=new Sprite(201,21);
+		var sl=s.SentakuList[j];
+		sl.image=new Surface(201,21);
+		sl.x=60;
+		sl.y=j*40+40;
+		sl.image.context.fillStyle="black";
+		sl.image.context.strokeStyle="white";
+		RoundRect(sl.image,0,0,200,17,4,1);
+		RoundRect(sl.image,0,0,200,17,4,0);
+		sl.image.context.fillStyle="white";
+		sl.image.context.textBaseline = 'top';
+		sl.image.context.font="bold 16px 'ＭＳ ゴシック'";
+		sl.image.context.fillText(arr[i],0,0,200);
+		sl.Func=arr[i+1];
+		sl.ontouchstart=function(){
+			this.tl.delay(1).then(function(){
+				player.canWalk=true;
+				this.Func();
+				var sc=null;
+				if(isSentouScene){
+					sc=sentou;
+				}else{
+					sc=scene;
+				}
+				for(var i=0,len=sc.SentakuList.length;i<len;i++){
+					sc.removeChild(sc.SentakuList[i]);
+				}
+				sc.SentakuList=null;
+			});
+		}
+		sl.onenterframe=function(){
+			player.canWalk=false;
+		}
+
+		s.addChild(sl);
+	}
+
+}
 
 //メッセージウィンドウの
 var MessageWindowCt=function(text,s){
@@ -2856,6 +3112,8 @@ var FieldAdd=function(s){
 };
 
 
+
+
 //戦闘シーンに追加するような奴
 var SentouAdd=function(s){
 	s=s || sentou;
@@ -2956,7 +3214,7 @@ var RoundRect= function(c, x, y, width, height, radius, isFill) {
 
 window.onload = function() {
     game = new Game();
-    game.fps=30;
+    game.fps=60;
 	game.input.touch={};
 	game.preload("piano/do1.mp3",
 		"piano/do1s.mp3",
@@ -3028,7 +3286,7 @@ window.onload = function() {
         	en[en.length]=this.number;
         	//すべての楽譜に対して演奏があってるか判定
         	for(var i=0,ga=gakuhus,len=ga.length;i<len;i++){
-        		for(var j=0,len2=en.length-ga[i].s.length+1;j<len;j++){
+        		for(var j=0,len2=en.length-ga[i].s.length+1;j<len2;j++){
         			if(en.slice(j,j+ga[i].s.length).join()===ga[i].s.join()){
         				isMagicActive[i]=true;
         			}
@@ -3073,7 +3331,7 @@ window.onload = function() {
             	en[en.length]=this.number;
             	//すべての楽譜に対して演奏があってるか判定
             	for(var i=0,ga=gakuhus,len=ga.length;i<len;i++){
-            		for(var j=0,len2=en.length-ga[i].s.length+1;j<len;j++){
+            		for(var j=0,len2=en.length-ga[i].s.length+1;j<len2;j++){
             			if(en.slice(j,j+ga[i].s.length).join()===ga[i].s.join()){
             				isMagicActive[i]=true;
             			}
@@ -3127,7 +3385,8 @@ window.onload = function() {
 		t.downstart     =false;
 		t.rightdownstart=false;
 	});
-
+    savedata.level++;
+    savedata.maxmp=99;
     game.replaceScene(MakaiEnterScene());
 
     };
