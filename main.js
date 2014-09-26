@@ -547,7 +547,7 @@ var GAKUHU={
 				savedata.mp-=this.mp;
 				sentou.mg=this;
 				sentou.tl.delay(1).then(function(){
-					MessageWindowCt([Enemy.name+"の体が光り輝き爆発した!",Enemy.damage(this.mg.power,this.mg.type),MagicList.Dup]);
+					MessageWindowCt([Enemy.name+"の体が光り輝き爆発した!",Enemy.damage(this.mg.power,this.mg.type,MagicList.Dup)]);
 				});
 			},
 			canField:false,
@@ -565,7 +565,7 @@ var GAKUHU={
 				savedata.mp-=this.mp;
 				sentou.mg=this;
 				sentou.tl.delay(1).then(function(){
-					MessageWindowCt(["炎の渦が"+Enemy.name+"を包む!",Enemy.damage(this.mg.power,this.mg.type),MagicList.Aup]);
+					MessageWindowCt(["炎の渦が"+Enemy.name+"を包む!",Enemy.damage(this.mg.power,this.mg.type,MagicList.Aup)]);
 				});
 			},
 			canField:false,
@@ -583,7 +583,7 @@ var GAKUHU={
 				savedata.mp-=this.mp;
 				sentou.mg=this;
 				sentou.tl.delay(1).then(function(){
-					MessageWindowCt([Enemy.name+"に氷の刃が突き刺さる!",Enemy.damage(this.mg.power,this.mg.type),MagicList.Adown]);
+					MessageWindowCt([Enemy.name+"に氷の刃が突き刺さる!",Enemy.damage(this.mg.power,this.mg.type,MagicList.Adown)]);
 				});
 			},
 			canField:false,
@@ -821,6 +821,14 @@ var Enemy={
 	clearAI:function(){
 		this.AI.length=0;
 	},
+	downD:function(){
+		if(savedata.rateD>=1){
+			savedata.rateD/=2;
+			return (savedata.rateD===1)?savedata.name+"の防御力が元に戻った":savedata.name+"の防御力が半分になった";
+		}else{
+			return savedata.name+"の防御力はもう下がらない。";
+		}
+	},
 	DefaultAI:{
 		1:function(){var that=Enemy;
 	    	that.message=[that.name+"の攻撃!",that.Attack()];
@@ -834,7 +842,7 @@ var Enemy={
 			else that.DefaultAI[1]();
 		},
 		8:function(){var that=Enemy;
-			if(savedata.rateD>=1)that.message=[that.name+"は守りのオーラを侵食してきた。",function(){savedata.rateD/=2; return (savedata.rateD===1)?savedata.name+"の防御力が元に戻った":savedata.name+"の防御力が半分になった";}];
+			if(savedata.rateD>=1)that.message=[that.name+"は守りのオーラを侵食してきた。",that.downD];
 			else that.DefaultAI[1]();
 		},
 		16:function(){var that=Enemy;
@@ -866,7 +874,7 @@ var Enemy={
 		},
 		128:function(){var that=Enemy;
 			if(that.hp<that.maxhp){
-				that.message=[function(){var h=that.hp; that.hp+=~~(that.maxhp*0.1); if(that.hp>that.maxhp)that.hp=that.maxhp; return that.name+"はHPを"+(that.hp-h)+"回復した";}];
+				that.message=[that.name+"は傷を癒した。",function(){var h=that.hp; that.hp+=~~(that.maxhp*0.2); if(that.hp>that.maxhp)that.hp=that.maxhp; return that.name+"はHPを"+(that.hp-h)+"回復した";}];
 			}else{
 				that.DefaultAI[1]();
 			}
@@ -885,7 +893,7 @@ var Enemy={
 			if(((+k)&v)===(+k))this.AI[this.AI.length]=this.DefaultAI[k];
 		}
 	},
-	damage:function(p,t){
+	damage:function(p,t,f){
 		t=t || "mu";
 		p=((p * savedata.atk*savedata.rateA) -(this.def*this.rateD)) *(0.8+Math.random()*0.4);
 		if(p<=0)p=0;
@@ -916,7 +924,7 @@ var Enemy={
 				this.mswin.endFunc2=function(){sentou.isEnd=true;}
 			});
 		}else {
-			Enemy.Turn(p);
+			Enemy.Turn(p,f);
 		}
 
 		console.log(savedata);
@@ -930,8 +938,9 @@ var Enemy={
 			return this.name+"の耐性が高くてダメージが吸収されてしまった！ <BR>"+this.name+"のHPが"+(-p)+"回復した";
 		}
 	},
-	Turn:function(p){
+	Turn:function(p,f){
 		sentou.tl.delay(1).then(function(){
+			if(f)this.mst.txtAdd(f());
 			if(p!==undefined){
 				if(this.isHPdrain){
 					sentou.enemydamagenow=p;
@@ -1036,6 +1045,21 @@ var Enemy={
 				};
 		}
 		return txt;
+	},
+	Drain:function(){
+		Enemy.isHPdrain=false;
+		var v=sentou.p;
+		var sv=Enemy;
+		if(v<=5)return sv.name+"は回復しなかった";
+		if(sv.hp>=sv.maxhp)return sv.name+"のHPは最大だ";
+		else{
+			v=~~(v*0.2);
+			if(sv.hp+v>=sv.maxhp){
+				v=sv.maxhp-sv.hp;
+			}
+			sv.hp+=v;
+		}
+		return sv.name+"のHPが"+v+"回復した";
 	},
 	AI:[
 		function(){var that=Enemy;
@@ -2360,44 +2384,59 @@ var EnemySet=function(){
 		Enemy.setDefaultAI(1+16);
 		break;
 	case elvl[10]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("サンダースライム", 220,110,65, 60, 60, 0, 150, 60,160,
+				[function(){var that=Enemy;that.message=[that.name+"のサンダーアタック!",that.Attack(1.5),that.Hirumi()];}]);
+		Enemy.setDefaultAI(1+8);
 		break;
 	case elvl[11]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ポイズンスライム", 280,120,70, 65,155, 65, 0, 65,185,
+				[function(){var that=Enemy;that.message=[that.name+"のポイズンアタック!",that.Attack(1.5),that.Tuika15(1,"う、苦しい……")];}]);
+		Enemy.setDefaultAI(1+64);
 		break;
 	case elvl[12]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ブラッドヴァム", 300,130,70, 65,155, 65, 0, 65,205,
+				[function(){var that=Enemy; that.isHPdrain=true; that.message=[that.name+"の吸血!",that.Attack(1.5),that.Drain];} ,
+				 function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
+		Enemy.setDefaultAI(64);
 		break;
 	case elvl[13]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
+		Enemy.set("クマー", 350,150,80, 80,20, 40, 40, 0,230,
+				[function(){var that=Enemy; that.message=[that.name+"は怪力を出して攻撃!",that.Attack(2)];}]);
 		Enemy.setDefaultAI(1);
 		break;
 	case elvl[14]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ライトニングヴァム", 400,150,85, 65,0, 65, 155, 65,250,
+				[function(){var that=Enemy; that.message=[that.name+"は口から光線を出した!",that.Attack(1.5),that.Hirumi()];} ,
+				 function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
+		Enemy.setDefaultAI(2);
 		break;
 	case elvl[15]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
+		Enemy.set("サンドバグ", 500,160,250, 80,60, 20, 40, 100,280,
+				[function(){var that=Enemy; that.message=[that.name+"のマッドショット!",that.Attack(1.5),that.Hirumi()];} ,
+				 function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
 		Enemy.setDefaultAI(1);
 		break;
 	case elvl[16]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("猛毒の魔界草", 600,180,250, 60,150, 150, 0, 0,310,
+				[function(){var that=Enemy; that.message=[that.name+"は毒の刺を飛ばした!",that.Attack(1.3),"毒で守りのオーラが侵食された!",that.downD];}]);
+		Enemy.setDefaultAI(2+8+128);
 		break;
 	case elvl[17]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
+		Enemy.set("サンドスネーク", 700,200,250, 70,50, 10, 20, 90,330,
+				[function(){var that=Enemy; that.message=[that.name+"のマッドショット!",that.Attack(1.5),that.Hirumi()];} ,
+				 function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
 		Enemy.setDefaultAI(1);
 		break;
 	case elvl[18]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("光の戦士", 700,160,100, 65,0, 65, 155, 65,360,
+				[function(){var that=Enemy; that.message=[that.name+"のレーザー光線!",that.Attack(1.5),that.Hirumi()];} ,
+				 function(){var that=Enemy;that.message=[that.name+"は剣で斬りかかってきた!",that.Attack(2.5)];}]);
+		Enemy.setDefaultAI(4+128);
 		break;
 	case elvl[19]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("シロークマ", 800,180,100, 60,0, 60, 120, 30,400,
+				[function(){var that=Enemy; that.message=[that.name+"は怪力を出して攻撃!",that.Attack(2)];}]);
+		Enemy.setDefaultAI(4);
 		break;
 	case elvl[20]:
 		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
