@@ -315,7 +315,7 @@ var MagicList={
 			if(sv.mp+v>=sv.maxmp){
 				v=sv.maxmp-sv.mp;
 			}
-			sv.hp+=v;
+			sv.mp+=v;
 		}
 		return sv.name+"のMPが"+v+"回復した";
 	}
@@ -699,6 +699,8 @@ var GAKUHU={
 									var dsL=game.memory.player.data.savedataList[v];
 									for(var k in sv){
 										if(k==="gakuhu"){
+											sL[k]=[];
+											dsL[k]=[];
 											for(var i=0,len=sv[k].length;i<len;i++){
 												sL[k][i]=sv[k][i];
 												dsL[k][i]=sv[k][i];
@@ -778,7 +780,7 @@ var savedata={
 		isDungeon:false,
 		isQuickSM:false,
 		isQuickFM:false,
-		gakuhu:["onpa","kanki","kirakira","tengoku","noroi","shuku","yami","hikari","honoo","koori","menue","moru","iwa","zenon","unmei"],
+		gakuhu:["onpa","kanki","kirakira","noroi","shuku","yami","hikari","honoo","koori","menue","iwa","zenon"],
 		exp:0,
 		expTable:1
 };
@@ -854,7 +856,7 @@ var Enemy={
 			var isUpA=(that.rateA<2);
 			console.log(isUpD);
 			if(isUpD||isUpA){
-				if(isUpD)that.message=that.message.concat([that.name+"は守りのオーラを強化した。",function(){if(that.rateD<2){that.rateD*=2; return (that.rateD===1)?that.name+"の防御力と全耐性が元に戻った":that.name+"の防御力と全耐性が2倍になった!";}else{ return "しかし、何も起こらなかった。";}}]);
+				if(isUpD)that.message=that.message.concat([that.name+"は守りのオーラを強化した。",function(){if(that.rateD<2){that.rateD*=2; return (that.rateD===1)?that.name+"の防御力が元に戻った":that.name+"の防御力が2倍になった!";}else{ return "しかし、何も起こらなかった。";}}]);
 				if(isUpA)that.message=that.message.concat([that.name+"は力のオーラを強化した。",function(){if(that.rateA<2){that.rateA*=2; return (that.rateA===1)?that.name+"の攻撃力が元に戻った":that.name+"の攻撃力が2倍になった!";}else{ return "しかし、何も起こらなかった。";}}]);
 			}else{
 				that.DefaultAI[1]();
@@ -865,8 +867,7 @@ var Enemy={
 			var isDownA=(savedata.rateA>=1);
 			console.log(isDownD);
 			if(isDownD||isDownA){
-				that.message=[];
-				if(isDownD)that.message=that.message.concat([that.name+"は守りのオーラを侵食してきた。",function(){savedata.rateD/=2; return (savedata.rateD===1)?savedata.name+"の防御力が元に戻った":savedata.name+"の防御力が半分になった";}]);
+				if(isDownD)that.message=that.message.concat([that.name+"は守りのオーラを侵食してきた。",that.downD]);
 				if(isDownA)that.message=that.message.concat([that.name+"は力のオーラを侵食してきた。",function(){savedata.rateA/=2; return (savedata.rateA===1)?savedata.name+"の攻撃力が元に戻った":savedata.name+"の攻撃力が半分になった";}]);
 			}else{
 				that.DefaultAI[1]();
@@ -960,6 +961,7 @@ var Enemy={
 					}
 				}
 			}
+			Enemy.message=[];
 			Enemy.AI[~~(Math.random()*Enemy.AI.length)]();
 			this.mst.txtAdd(Enemy.message);
 		});
@@ -1835,7 +1837,23 @@ var DungeonScene=function(i,j){
 		    [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 		];
 
-		s.npcs=[];
+		s.npcs=[
+		        new Takara("unmei",1,17),
+		        new Takara("tengoku",7,3),
+		        new NPC(319,["俺は魔界四天王の一人、ダークナイトだ!","俺を倒せたら後ろの宝箱の中身をやろう。","行くぞ!",
+                             function(){
+										Enemy.clearAI();
+										Enemy.set("ダークナイト", 4500,100,400, 50,150, 50, 0, 50,1000,
+												[function(){var that=Enemy; that.message=[that.name+"のダークスラッシュ!",that.Attack(1.5),that.Hirumi(1)];} ,
+													 function(){var that=Enemy;that.message=[that.name+"は剣で斬りかかってきた!",that.Attack(2.5)];}]);
+										Enemy.setDefaultAI(4+8+128);
+										SuperPushScene(SentouScene(704,5));
+										return "ぐふっ!まさかこんな貧弱な奴に負けるとは……。" ;},
+										"しかし、俺は残念なことに <BR>『奴は四天王の中でも最弱』 <BR>とよく言われる。","俺を倒したぐらいでいい気になるなよ……ぐふっ",
+										function(){scene.npcs[2].setPosition(-1,0); return "ダークナイトは消え去った。";}
+										],3,17)
+		        ];
+		if(aruGakuhu("unmei"))s.npcs[2].setPosition(-1,0);
 		break;
 
 	case 2:
@@ -1917,7 +1935,22 @@ var DungeonScene=function(i,j){
 		    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1],
 		    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1]
 		];
-		s.npcs=[];
+		s.npcs=[
+			        new Takara("moru",18,17),
+			        new Takara("iwa",9,2),
+			        new NPC(410,["わしは光の魔導師。","後ろの宝箱が欲しければ、わしを倒せ。","覚悟はよいな?",
+                                 function(){
+											Enemy.clearAI();
+											Enemy.set("光の魔導師", 5500,200,200, 50,0, 50, 150, 50,1500,
+													[function(){var that=Enemy; that.message=[that.name+"の光の波動!",that.Attack(1.5),that.Hirumi(1)];} ,
+														 function(){var that=Enemy;that.message=[that.name+"は雷を落とした!",that.Attack(2.5)];}]);
+											Enemy.setDefaultAI(2+4+128);
+											SuperPushScene(SentouScene(804,5));
+											return "ぎょえぇ!" ;},
+											function(){scene.npcs[2].setPosition(-1,0); return "光の魔導師は消え去った。";}
+											],16,17)
+			        ];
+			if(aruGakuhu("moru"))s.npcs[2].setPosition(-1,0);
 		break;
 
 	case 3:
@@ -2284,6 +2317,17 @@ var DungeonScene=function(i,j){
 	  return s;
 };
 
+var aruGakuhu=function(g){
+	var sv=savedata;
+	var aru=false;
+	for(var i=0,ga=sv.gakuhu,len=ga.length;i<len;i++){
+		if(ga[i]===g){
+			aru=true;
+			break;
+		}
+	}
+	return aru;
+};
 
 var EnemySet=function(){
 	var v=null;
@@ -2439,24 +2483,33 @@ var EnemySet=function(){
 		Enemy.setDefaultAI(4);
 		break;
 	case elvl[20]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("スーパースライム", 1500,120,70, 60,40, 160, 80, 0,440,
+				[function(){var that=Enemy; that.message=[that.name+"はのしかかってきた!",that.Attack(1.2),that.Hirumi()];}]);
+		Enemy.setDefaultAI(32+64);
 		break;
 	case elvl[21]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ポイズンスネーク", 1000,220,270, 50,150, 30, 0, 50,490,
+				[function(){var that=Enemy; that.message=[that.name+"は毒のきばで噛みついた!",that.Attack(1.5),that.Tuika30(1,"毒が体に回って苦しい……。")];}]);
+		Enemy.setDefaultAI(8+16);
 		break;
 	case elvl[22]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ウチュークマ", 1000,200,130, 60,0, 60, 120, 30,530,
+				[function(){var that=Enemy; that.message=[that.name+"は怪力を出して攻撃!",that.Attack(2)];}]);
+		Enemy.setDefaultAI(32);
 		break;
 	case elvl[23]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ヴォルスネーク", 1500,250,300, 50,50, 0, 30, 150,580,
+				[function(){var that=Enemy; that.message=[that.name+"は炎のきばで噛みついた!",that.Attack(1.6),that.Tuika30(0,"熱い!")];},
+				 function(){var that=Enemy; that.message=[that.name+"は噛みついて体力を吸い取った!",that.Attack(2),that.Drain];},
+				 ]);
+		Enemy.setDefaultAI(4);
 		break;
 	case elvl[24]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ヘルスネーク", 2000,250,300, 90,80, 30, 20, 80,630,
+				[function(){var that=Enemy; that.message=[that.name+"は炎のきばで噛みついた!",that.Attack(1.6),that.Tuika30(0,"熱い!")];},
+				 function(){var that=Enemy; that.message=[that.name+"は噛みついて体力を吸い取った!",that.Attack(2),that.Drain];},
+				 ]);
+		Enemy.setDefaultAI(4);
 		break;
 	case elvl[25]:
 		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
@@ -3005,12 +3058,61 @@ var ColorSwap=function(context,w,h,p){
 	context.putImageData(color,0,0);
 };
 
+//p 0:r=g, 1:r=b, 2:g=b, 3:g=r, 4:b=r, 5:b=g
+var ColorOnaji=function(context,w,h,p){
+	var color=context.getImageData(0,0,w,h);
+	switch (p) {
+	case 0:
+		for(var i=0,l=color.data.length;i<l;i+=4){
+			color.data[i]=color.data[i+1];
+		}
+		break;
+	case 1:
+		for(var i=0,l=color.data.length;i<l;i+=4){
+			color.data[i]=color.data[i+2];
+		}
+		break;
+	case 2:
+		for(var i=0,l=color.data.length;i<l;i+=4){
+			color.data[i+1]=color.data[i+2];
+		}
+		break;
+	case 3:
+		for(var i=0,l=color.data.length;i<l;i+=4){
+			color.data[i+1]=color.data[i];
+		}
+		break;
+	case 4:
+		for(var i=0,l=color.data.length;i<l;i+=4){
+			color.data[i+2]=color.data[i];
+		}
+		break;
+	case 5:
+		for(var i=0,l=color.data.length;i<l;i+=4){
+			color.data[i+2]=color.data[i+1];
+		}
+		break;
+	}
+
+	context.putImageData(color,0,0);
+};
+
+
 //敵画像
 var EnemyImage = enchant.Class.create(enchant.Sprite, {
   initialize : function(id,x,y){
       enchant.Sprite.call(this, 32, 32);
       var image = new Surface(32, 32);
-      image.draw(game.assets['images/chara6.png'], ((id % 9)+0.1) * 32, (~~(id/9)+0.2)*32, 32, 32, 0, 0, 32, 32);
+      if(id<700){
+    	  image.draw(game.assets['images/chara6.png'], ((id % 9)+0.1) * 32, (~~(id/9)+0.2)*32, 28, 28, 0, 0, 28, 28);
+      }else if(id<800 && id>=700){
+    	  id-=700;
+    	  image.draw(game.assets['images/chara7.png'], ((id % 9)+0.1) * 32, (~~(id/9)+0.2)*32, 28, 28, 0, 0, 28, 28);
+      }else if(id<900 && id>=800){
+    	  id-=800;
+    	  image.draw(game.assets['images/chara6.png'], ((id % 9)+0.1) * 32, (~~(id/9)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  ColorOnaji(image.context,28,28,3);
+      }
       this.image = image;
       this.x=160;this.y=160;
       if(y!==undefined)this.setScale(x,y);
@@ -3037,9 +3139,16 @@ var NPC = enchant.Class.create(enchant.Sprite, {
       }else if(id>=100 && id<200){
       	id-=100;
       	image.draw(game.assets['images/chara5.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
-      }else if(id>=200){
+      }else if(id>=200 && id<300){
       	id-=200;
       	image.draw(game.assets['images/chara6.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
+      }else if(id>=300 && id<400){
+    	id-=300;
+      	image.draw(game.assets['images/chara7.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
+      }else if(id>=400 && id<500){
+    	  id-=400;
+    	  image.draw(game.assets['images/chara6.png'], (id % 6) * 32, ~~(id/6)*32, 32, 32, 0, 0, 32, 32);
+    	  ColorOnaji(image.context,32,32,3);
       }
       this.image = image;
       this.talktext=text || ["……。"];
@@ -3657,6 +3766,7 @@ window.onload = function() {
 		"images/chara0.png",
 		"images/chara5.png",
 		"images/chara6.png",
+		"images/chara7.png",
 		"images/map1.png");
     game.onload = function() {
 	var scene = game.rootScene;
@@ -3827,7 +3937,6 @@ window.onload = function() {
     	game.on(Kenbans.KL[i]+'buttondown' ,function(e){game.input[e.type]=true;});
     	game.on(Kenbans.KL[i]+'buttonup' ,function(e){game.input[e.type]=true;});
     }
-
 
     game.on('exitframe',function(){
     	var t=game.input;
