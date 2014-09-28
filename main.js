@@ -780,7 +780,7 @@ var savedata={
 		isDungeon:false,
 		isQuickSM:false,
 		isQuickFM:false,
-		gakuhu:["onpa","kanki","kirakira","noroi","shuku","yami","hikari","honoo","koori","menue","iwa","zenon"],
+		gakuhu:["onpa"],
 		exp:0,
 		expTable:1
 };
@@ -792,8 +792,8 @@ var Enemy={
 	maxhp:8,
 	hp:8,
 	atk:8,
-	def:3,
-	mu:20,
+	def:2,
+	mu:0,
 	yami:10,
 	mizu:150,
 	hikari:50,
@@ -1136,12 +1136,11 @@ var SuperPushScene=function(s){
 
 
 
-//タイトルシーン
-var TitleScene = function(){
+var YumeScene = function(){
 	var s=new Scene();
 	scene=s;
 	s.isDream=true;
-    player=Player();
+  player=Player();
 	player.setPosition(10,10);
 	map = new Map(16, 16);
 	map.image = game.assets['images/map1.png'];
@@ -1305,22 +1304,140 @@ var TitleScene = function(){
 	npcs[0].setPosition(20,30);
 
 	npcs[1]=new Takara("mezame",23,29);
-    Grouping([map,npcs[0],npcs[1],player]);
-    FieldAdd();
-    TouchCtrl();
+  Grouping([map,npcs[0],npcs[1],player]);
+  FieldAdd();
+  TouchCtrl();
 	MagicActiveAllFalse();
-    MessageWindowCt(["ここはどこだろう……。","……とりあえず、抜け出そう。"]);
-    s.git=game.input.touch;
-    s.onenterframe=function(){
-    	if(this.isMessage){
-    		if(this.git.start)MessageNext();
-    	}else{
-    		if(this.git.leftupstart)game.pushScene(PianoScene());
-    		else if(this.git.rightstart)game.pushScene(GakuhuSelectScene());
-    		else if(this.git.rightdownstart)game.pushScene(TuyosaScene());
-    	}
-    }
-    return s;
+  MessageWindowCt(["ここはどこだろう……。","……とりあえず、抜け出そう。"]);
+  s.git=game.input.touch;
+  s.onenterframe=function(){
+  	if(this.isMessage){
+  		if(this.git.start)MessageNext();
+  	}else{
+  		if(this.git.leftupstart)game.pushScene(PianoScene());
+  		else if(this.git.rightstart)game.pushScene(GakuhuSelectScene());
+  		else if(this.git.rightdownstart)game.pushScene(TuyosaScene());
+  	}
+  }
+  return s;
+};
+
+var NameScene=function(){
+	var s=new Scene();
+	scene=s;
+	player={};
+	TouchCtrl(s);
+	s.addChild(WindowCreator(0,0,320,320));
+  s.git=game.input.touch;
+  var x=320/3;
+  var nL=["フォルテ","ピアノ","テンポ","ヴィーデ","コーダ"];
+  var tL=[];
+  for(var i=0,len=nL.length;i<len;i++){
+	  tL[i]=WindowCreator(x,40*i+20,x,18,1);
+	  SurfaceLabel(tL[i].image.context,nL[i]);
+	  tL[i].name=nL[i];
+	  tL[i].ontouchstart=function(){
+		  savedata.name=this.name;
+		  SuperReplaceScene(YumeScene());
+	  }
+	  s.addChild(tL[i]);
+  }
+
+  s.mswin=WindowCreator(0,320-111,320,110);
+  s.addChild(s.mswin);
+  s.mswin.visible=false;
+  s.mscount=0;
+  s.mst=new Label();
+  s.mst.width=300;
+  s.mst.x=5;
+  s.mst.y=320-105;
+  s.addChild(s.mst);
+  MessageWindowCt(["名前を選択してください"]);
+  s.onenterframe=function(){
+  	if(this.isMessage){
+  	}else{
+  	}
+  }
+  return s;
+};
+
+//タイトルシーン
+var TitleScene = function(){
+	var s=new Scene();
+	scene=s;
+	player={};
+	TouchCtrl(s);
+	s.addChild(WindowCreator(0,0,320,320));
+  s.git=game.input.touch;
+  var x=320/3;
+  var hajimekara=WindowCreator(x,50,x,18,1);
+  SurfaceLabel(hajimekara.image.context,"はじめから");
+  hajimekara.ontouchstart=function(){
+	  SuperReplaceScene(NameScene());
+  }
+  hajimekara.onenterframe=function(){
+	  if(scene.isSentaku)this.visible=false;
+	  else this.visible=true;
+  }
+  s.addChild(hajimekara);
+
+  var tudukikara=WindowCreator(x,100,x,18,1);
+  SurfaceLabel(tudukikara.image.context,"つづきから");
+  tudukikara.ontouchstart=function(){
+		scene.tl.delay(1).then(function(){
+			var arr=[];
+			for(var i=0,j=0;i<5;i++,j+=2){
+				arr[j]="スロット"+(i+1)+"：";
+				arr[j]+=savedataList[i].name?"レベル"+savedataList[i].level+savedataList[i].name:"空のスロット"
+				arr[j+1]=function(v){
+					scene.tl.delay(1).then(function(){
+						if(savedataList[v].name){
+							var sv= savedata;
+							var sL=savedataList[v];
+							for(var k in sL){
+								if(k==="gakuhu"){
+									sv.gakuhu=[];
+									for(var i=0,len=sL[k].length;i<len;i++){
+										sv[k][i]=sL[k][i];
+									}
+								}else {
+									sv[k]=sL[k];
+								}
+							}
+							SuperReplaceScene(MakaiEnterScene());
+						}else {
+							MessageWindowCt(["そのスロットは空です。"]);
+						}
+					});
+				};
+			}
+			MessageWindowCt([" <BR> <BR> <BR>どのセーブデータから始めますか？"]);
+			Sentaku(arr,function(){MessageWindowCt(["戻ります"]);});
+		});
+	};
+	tudukikara.onenterframe=function(){
+		  if(scene.isSentaku)this.visible=false;
+		  else this.visible=true;
+	  }
+  s.addChild(tudukikara);
+
+  s.mswin=WindowCreator(0,320-111,320,110);
+  s.addChild(s.mswin);
+  s.mswin.visible=false;
+  s.mscount=0;
+  s.mst=new Label();
+  s.mst.width=300;
+  s.mst.x=5;
+  s.mst.y=320-105;
+  s.addChild(s.mst);
+
+  s.onenterframe=function(){
+  	if(this.isMessage){
+  		if(this.git.start)MessageNext();
+  	}else{
+  	}
+  }
+  return s;
 };
 
 //村
@@ -2799,7 +2916,9 @@ var TuyosaScene=function(){
 	var l=new Label("",x+5,y+5);
 	l.width=140;
 	var sv=savedata;
-	l.text= "レベル : "+sv.level+
+	l.text=
+	sv.name+
+	" <BR>レベル : "+sv.level+
 	" <BR>最大HP : "+sv.maxhp+
 	" <BR>最大MP : "+sv.maxmp+
 	" <BR>攻撃力 : "+sv.atk+
@@ -3714,18 +3833,27 @@ var SentouAdd=function(s){
 
 
 //枠を作る
-var WindowCreator=function(x,y,width,height){
+var WindowCreator=function(x,y,width,height,lineWidth){
 	var c=new Sprite(width+1,height+1);
     c.image=new Surface(width+10,height+10);
     c.x=x;
     c.y=y;
     c.image.context.fillStyle="black";
     c.image.context.strokeStyle="white";
-    c.image.context.lineWidth=3;
+    c.image.context.lineWidth=lineWidth===undefined?3:lineWidth;
     RoundRect(c.image, 0, 0, width, height, 10, 1);
     RoundRect(c.image, 0, 0, width, height, 10, 0);
     return c;
 };
+
+//サーフェス自体に文字を
+var SurfaceLabel=function(c,label,width,font,fill){
+		c.fillStyle=fill?fill:"white";
+		c.textBaseline = 'top';
+		c.font=font?font:"bold 16px 'ＭＳ ゴシック'";
+		width=width?width:100;
+		c.fillText(label,3,1,width);
+}
 
 //角丸
 var RoundRect= function(c, x, y, width, height, radius, isFill) {
@@ -3784,19 +3912,6 @@ window.onload = function() {
 					}else{
 						sL[i][k]=dsL[i][k];
 					}
-				}
-			}
-		}
-		if(savedataList[0].name){
-			var sL=savedataList[0];
-			var sv=savedata;
-			for(var k in sL){
-				if(k==="gakuhu"){
-					for(var i=0,len=sL[k].length;i<len;i++){
-						sv[k][i]=sL[k][i];
-					}
-				}else{
-					sv[k]=sL[k];
 				}
 			}
 		}
@@ -3957,11 +4072,8 @@ window.onload = function() {
 		t.downstart     =false;
 		t.rightdownstart=false;
 	});
-    if(savedata.isDungeon){
-    	game.replaceScene(MakaiEnterScene());
-    }else{
-    	game.replaceScene(TitleScene());
-    }
+
+    game.replaceScene(TitleScene());
     };
 
 
