@@ -2454,17 +2454,18 @@ var EnemySet=function(){
 
 	var gCheck=["kirakira","kanki","shuku","noroi","koori","honoo","hikari","yami","menue"];
 	var lCheck=[6,8,10,12,16,18,22,25,30];
-
-	for(var i=0;i<9;i++){
-		var aru=false;
-		for(var j=0,ga=savedata.gakuhu,len=ga.length;j<len;j++){
-			if(ga[j]===gCheck[i]){
-				aru=true;
+	if(lv>=6){
+		for(var i=0;i<9;i++){
+			var aru=false;
+			for(var j=0,ga=savedata.gakuhu,len=ga.length;j<len;j++){
+				if(ga[j]===gCheck[i]){
+					aru=true;
+				}
 			}
-		}
-		if(!aru){
-			lv=lCheck[i]-1;
-			break;
+			if(!aru){
+				lv=lCheck[i]-1;
+				break;
+			}
 		}
 	}
 	for(var i=0;elvl[i]<=lv;i++){};
@@ -2711,6 +2712,7 @@ var SentouScene=function(id,x,y){
 	    		if(this.t.leftdownstart)this.g.pushScene(PianoScene());
     		}
     	}else{
+    		if(scene.isMessage)player.canWalk=false;
     		var sv=savedata;
     		isSentouScene=false;
     		sv.hp=sv.maxhp;
@@ -3596,7 +3598,11 @@ var TouchCtrl=function(s){
 
 	if(isSentouScene)s=s || sentou;
 	else s=s || scene;
-
+	var gin=game.input;
+	gin.up=false;
+	gin.down=false;
+	gin.right=false;
+	gin.left=false;
 	s.on('touchstart',function(e){
 		var t=game.input.touch;
 		t.start   =true;
