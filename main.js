@@ -713,7 +713,7 @@ var GAKUHU={
 									game.memory.update();
 									MessageWindowCt(["スロット"+(v+1)+"にデータをセーブしました。","ゲームを終了しますか？"]);
 									scene.mswin.endFunc=function(){
-										YesNo("はい","いいえ",function(){game.end(0,"クリア率000%");},function(){MessageWindowCt(["ゲームを続けます。"]);})
+										YesNo("はい","いいえ",scoreTouroku,function(){MessageWindowCt(["ゲームを続けます。"]);})
 									}
 							};
 						}
@@ -745,7 +745,24 @@ var GAKUHU={
 			t:[0,3,5,9,12,15,17,21,23,26,30,32,34]
 		},
 };
-
+var scoreTouroku=function(){
+	var sv=savedata;
+	var score=sv.gakuhu.length;
+	score+=sv.isQuickSM?1:0;
+	score+=sv.isQuickFM?1:0;
+	score+=sv.isGameClear?1:0;
+	score=~~(score/21*100);
+	var p=score;
+	console.log(score);
+	score*=sv.level;
+	console.log(score);
+	var m="レベル"+sv.level+" ゲーム進行度"+p+"%";
+	if(sv.isGameClear){
+		//score+=1000-ラスボス撃破にかかったターン
+		//m+=" ０ターンでラスボス撃破";
+	}
+	game.end(score,m);
+}
 var isIwakudaki=false;
 //魔法が発動しているかどうかgakuhusの順番
 var isMagicActive=new Array(18);
@@ -831,6 +848,15 @@ var Enemy={
 			return savedata.name+"の防御力はもう下がらない。";
 		}
 	},
+	upA:function(){
+		var that=Enemy;
+		if(that.rateA<2){
+			that.rateA*=2;
+			return (that.rateA===1)?that.name+"の攻撃力が元に戻った":that.name+"の攻撃力が2倍になった!";
+		}else{
+			return that.name+"の攻撃力はもう上がらない。";
+		}
+	},
 	DefaultAI:{
 		1:function(){var that=Enemy;
 	    	that.message=[that.name+"の攻撃!",that.Attack()];
@@ -840,7 +866,7 @@ var Enemy={
 			else that.DefaultAI[1]();
 		},
 		4:function(){var that=Enemy;
-			if(that.rateA<2)that.message=[that.name+"は力のオーラを強化した。",function(){that.rateA*=2; return (that.rateA===1)?that.name+"の攻撃力が元に戻った":that.name+"の攻撃力が2倍になった!";}];
+			if(that.rateA<2)that.message=[that.name+"は力のオーラを強化した。",that.upA];
 			else that.DefaultAI[1]();
 		},
 		8:function(){var that=Enemy;
@@ -909,7 +935,7 @@ var Enemy={
 				ms.txtAdd([Enemy.name+"を倒した！",Enemy.exp+"の経験値を獲得"]);
 				var sv=savedata;
 				sv.exp+=Enemy.exp;
-				while(sv.exp>=sv.expTable){
+				while(sv.exp>=sv.expTable&&(100>=sv.level)){
 					sv.level++;
 					var h=~~(Math.random()*5+8);
 					var m=~~(Math.random()*3+1);
@@ -950,7 +976,7 @@ var Enemy={
 					sentou.enemydamagenow=p;
 					this.mst.txtAdd(MagicList.MPdrain);
 				}
-				if(p<=0){
+				if(p===0){
 					var sv=savedata;
 					if(sv.rateA<2){
 						sv.rateA*=2;
@@ -973,10 +999,16 @@ var Enemy={
 		if(p<=0)p=0;
 		if(Enemy.rateD===0)p+=Math.round(savedata.maxhp*(Math.random()*0.2+0.3));
 		sentou.p=p;
-		if(savedata.hp-p<=0){
+		var v=sentou.isHPdrain?sentou.enemydamagenow:0;
+		v=~~(v*0.2);
+		if(savedata.hp+v>=savedata.maxhp){
+			v=savedata.maxhp-savedata.hp;
+		}
+		if(savedata.hp-p+v<=0){
 			sentou.tl.delay(1).then(function(){
 				this.mst.stack[this.mst.stack.length]=savedata.name+"は死んでしまった。";
-				this.mswin.endFunc2=function(){sentou.isEnd=true;}
+				this.mst.stack[this.mst.stack.length]=function(){scoreTouroku(); return "GAMEOVER";};
+
 			});
 		}else if(p===0){
 			sentou.tl.delay(1).then(function(){
@@ -1052,10 +1084,9 @@ var Enemy={
 		Enemy.isHPdrain=false;
 		var v=sentou.p;
 		var sv=Enemy;
-		if(v<=5)return sv.name+"は回復しなかった";
+		if(v<=0)return sv.name+"は回復しなかった";
 		if(sv.hp>=sv.maxhp)return sv.name+"のHPは最大だ";
 		else{
-			v=~~(v*0.2);
 			if(sv.hp+v>=sv.maxhp){
 				v=sv.maxhp-sv.hp;
 			}
@@ -1664,7 +1695,7 @@ var MuraScene=function(){
 //井戸に入った
 var MakaiEnterScene=function(back){
 	savedata.isDungeon=true;
-	MagicActiveAllFalse();
+	if(!savedata.isQuickFM){MagicActiveAllFalse();}
 	var s=new Scene();
 	scene=s;
   player=Player();
@@ -1766,7 +1797,7 @@ var MakaiEnterScene=function(back){
 
 var DungeonScene=function(i,j){
 
-	MagicActiveAllFalse();
+	if(!savedata.isQuickFM)MagicActiveAllFalse();
 	var s=new Scene();
 	scene=s;
 	player=Player();
@@ -1968,9 +1999,22 @@ var DungeonScene=function(i,j){
 										return "ぐふっ!まさかこんな貧弱な奴に負けるとは……。" ;},
 										"しかし、俺は残念なことに <BR>『奴は四天王の中でも最弱』 <BR>とよく言われる。","俺を倒したぐらいでいい気になるなよ……ぐふっ",
 										function(){scene.npcs[2].setPosition(-1,0); return "ダークナイトは消え去った。";}
-										],3,17)
+										],3,17),
+				new NPC(510,["俺の前に来るとはいい度胸じゃないか","ちょうどイライラしてたところだ","お前の体をぐちゃぐちゃにしてやろう!",
+                             function(){
+										Enemy.clearAI();
+										Enemy.set("ドラゴン", 8000,250,300, 50,50, 0, 50, 150,2000,
+												[function(){var that=Enemy; that.message=[that.name+"のファイアブレス!",that.Attack(1.5),that.Tuika15(1,"熱い!")];} ,
+													 function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
+										Enemy.setDefaultAI(4+64);
+										SuperPushScene(SentouScene(2510,5));
+										return "どうなっているんだ……。" ;},
+										"今まで、人間などに負けることなどなかったというのに","こんなところで紙切れの見張りをさせられ","またしても人間にやられるとは……。ぐおぉぅ…………",
+										function(){scene.npcs[3].setPosition(-1,-1); return "ドラゴンは消え去った。";}
+										],7,4)
 		        ];
 		if(aruGakuhu("unmei"))s.npcs[2].setPosition(-1,0);
+		if(aruGakuhu("tengoku"))s.npcs[3].setPosition(-1,-1);
 		break;
 
 	case 2:
@@ -2065,9 +2109,25 @@ var DungeonScene=function(i,j){
 											SuperPushScene(SentouScene(804,5));
 											return "ぎょえぇ!" ;},
 											function(){scene.npcs[2].setPosition(-1,0); return "光の魔導師は消え去った。";}
-											],16,17)
+											],16,17),
+					new NPC(601,["お前の体を凍らせて","そのまま噛み砕いたら、最高に爽快だろうな",
+	                             function(){
+											Enemy.clearAI();
+											Enemy.set("ブリザード", 10000,300,150, 50,50, 150, 50, 0,3000,
+													[function(){var that=Enemy; that.message=[that.name+"の吹雪!",that.Attack(1.3),that.Hirumi(1)];},
+													 function(){var that=Enemy; if(that.hp>=5000){that.message=["「痛くもかゆくもない」",that.name+"は余裕そうだ"];}else{ that.message=["「意外と強くて驚いたぜ」",that.name+"は噛みついて体力を吸い取った!",that.Attack(1.5),that.Drain];}},
+													 function(){var that=Enemy; that.message=[that.name+"の凍える波動!",that.Attack(1.3),function(){savedata.mp=~~(savedata.mp/2); return savedata.name+"のMPが半分になった"}];},
+													function(){var that=Enemy; if(that.hp>=5000){that.message=["「それ本気?」",that.name+"は余裕そうだ"];}else{that.message=["「なかなかやるじゃないか」",that.name+"は噛みついた!",that.Attack(1.8)];}}
+													]);
+											Enemy.setDefaultAI(4+64+128);
+											SuperPushScene(SentouScene(2601,5));
+											return "あー" ;},
+											"つれーわー","まさか、負けると思わなかったー。",
+											function(){scene.npcs[3].setPosition(-1,-1); return "ブリザードは消え去った。";}
+											],9,4)
 			        ];
-			if(aruGakuhu("moru"))s.npcs[2].setPosition(-1,0);
+		if(aruGakuhu("moru"))s.npcs[2].setPosition(-1,0);
+		if(aruGakuhu("iwa"))s.npcs[3].setPosition(-1,-1);
 		break;
 
 	case 3:
@@ -2179,7 +2239,22 @@ var DungeonScene=function(i,j){
 		];
 
 
-		s.npcs=[];
+		s.npcs=[
+		        new Iwa(9,27),
+		        new Iwa(9,26),
+		        new Iwa(9,25),
+		        new Iwa(9,24),
+		        new Iwa(9,23),
+		        new Iwa(9,22),
+		        new Iwa(9,21),
+		        new Iwa(9,20),
+		        new Iwa(9,19),
+		        new Iwa(9,18),
+		        new Iwa(9,17),
+		        new Iwa(9,16),
+		        new Iwa(9,15),
+		        new Kanban(["ラスボスはお出かけ中"],9,9)
+		        ];
 		break;
 
 	case 4:
@@ -2294,7 +2369,14 @@ var DungeonScene=function(i,j){
 		    [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,0],
 		    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0]
 		];
-		s.npcs=[];
+		s.npcs=[
+		        new SuperTakara(4,14),
+		        new SuperTakara(16,14),
+		        new SuperTakara(12,14),
+		        new SuperTakara(17,2),
+		        new SuperTakara(2,10),
+		        new Takara("fm",11,6)
+		        ];
 		break;
 
 	case 5:
@@ -2410,7 +2492,15 @@ var DungeonScene=function(i,j){
 
 
 
-		s.npcs=[];
+		s.npcs=[
+		        new Iwa(9,17),
+		        new SuperTakara(16,1),
+		        new SuperTakara(4,17),
+		        new SuperTakara(6,13),
+		        new SuperTakara(15,13),
+		        new SuperTakara(13,17),
+		        new Takara("sm",13,19)
+		        ];
 		break;
 
 	}
@@ -2454,18 +2544,16 @@ var EnemySet=function(){
 
 	var gCheck=["kirakira","kanki","shuku","noroi","koori","honoo","hikari","yami","menue"];
 	var lCheck=[6,8,10,12,16,18,22,25,30];
-	if(lv>=6){
-		for(var i=0;i<9;i++){
-			var aru=false;
-			for(var j=0,ga=savedata.gakuhu,len=ga.length;j<len;j++){
-				if(ga[j]===gCheck[i]){
-					aru=true;
-				}
+	for(var i=0;i<9;i++){
+		var aru=false;
+		for(var j=0,ga=savedata.gakuhu,len=ga.length;j<len;j++){
+			if(ga[j]===gCheck[i]){
+				aru=true;
 			}
-			if(!aru){
-				lv=lCheck[i]-1;
-				break;
-			}
+		}
+		if(!aru){
+			lv=(lv>=(lCheck[i]-1))?lCheck[i]-1:lv;
+			break;
 		}
 	}
 	for(var i=0;elvl[i]<=lv;i++){};
@@ -2499,175 +2587,242 @@ var EnemySet=function(){
 	var x=5;
 	switch (v) {
 	case elvl[0]:
-		Enemy.set("スライム", 20, 15, 4,20, 40, 150, 80, 0,3, [function(){Enemy.message=[Enemy.name+"はプルプルしている。"];}]);
+		Enemy.set("スライム", 20, 10, 4,20, 40, 150, 80, 0,3, [function(){Enemy.message=[Enemy.name+"はプルプルしている。"];}]);
 		Enemy.setDefaultAI(1);
+		v=0;
 		break;
 	case elvl[1]:
-		Enemy.set("レッドスライム", 30, 23, 5,20, 60, 130, 60, 20,8, []);
+		Enemy.set("レッドスライム", 30, 15, 5,20, 60, 130, 60, 20,8, []);
 		Enemy.setDefaultAI(1);
+		v=100;
 		break;
 	case elvl[2]:
-		Enemy.set("ブルースライム", 50, 40, 10,20, 40, 180, 60, 0,15, []);
+		Enemy.set("ブルースライム", 50, 25, 10,20, 40, 180, 60, 0,15, []);
 		Enemy.setDefaultAI(1+2);
+		v=200;
 		break;
 	case elvl[3]:
-		Enemy.set("炎の魔導師", 70, 45,20, 25, 25, 0, 50, 120,28,
+		Enemy.set("炎の魔導師", 70, 30,20, 25, 25, 0, 50, 120,28,
 				[function(){var that=Enemy;that.message=[that.name+"の火の玉!",that.Attack(1.4)];}]);
 		Enemy.setDefaultAI(1);
+		v=4;
 		break;
 	case elvl[4]:
-		Enemy.set("水の魔導師", 80,60, 30, 30, 30, 130, 50, 0,45,
+		Enemy.set("水の魔導師", 80,40, 30, 30, 30, 130, 50, 0,45,
 				[function(){var that=Enemy;that.message=[that.name+"の水の波動!",that.Attack(1.3),that.Hirumi()];}]);
 		Enemy.setDefaultAI(1+2);
+		v=304;
 		break;
 	case elvl[5]:
-		Enemy.set("ヴァム", 90, 65, 30,10, 130, 20, 0, 20,65,
+		Enemy.set("ヴァム", 90, 50, 30,10, 130, 20, 0, 20,65,
 				[function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
 		Enemy.setDefaultAI(1);
+		v=402;
 		break;
 	case elvl[6]:
-		Enemy.set("闇の魔導師", 110,80,40, 60, 150, 30, 0, 60,85,
+		Enemy.set("闇の魔導師", 110,65,40, 60, 150, 30, 0, 60,85,
 				[function(){var that=Enemy;that.message=[that.name+"の闇の波動!",that.Attack(1),that.Hirumi(1)];}]);
 		Enemy.setDefaultAI(1+8);
+		v=504;
 		break;
 	case elvl[7]:
-		Enemy.set("魔界草", 180,120,200,50, 50, 150, 50, 0,100,
+		Enemy.set("魔界草", 180,105,200,50, 50, 150, 50, 0,100,
 				[]);
 		Enemy.setDefaultAI(1);
+		v=609;
 		break;
 	case elvl[8]:
 		Enemy.set("フレアスライム", 150,90,50, 60, 60, 0, 60, 150,120,
 				[function(){var that=Enemy;that.message=[that.name+"のフレアアタック!",that.Attack(1.5),that.Tuika15(0,"熱い!")];}]);
 		Enemy.setDefaultAI(1+4);
+		v=900;
 		break;
 	case elvl[9]:
 		Enemy.set("アイススライム", 200,110,60, 60, 60, 150, 60, 0,140,
 				[function(){var that=Enemy;that.message=[that.name+"のアイスアタック!",that.Attack(1.3),that.Tuika15(0,"冷たい!"),that.Hirumi()];}]);
 		Enemy.setDefaultAI(1+16);
+		v=1000;
 		break;
 	case elvl[10]:
 		Enemy.set("サンダースライム", 220,110,65, 60, 60, 0, 150, 60,160,
 				[function(){var that=Enemy;that.message=[that.name+"のサンダーアタック!",that.Attack(1.5),that.Hirumi()];}]);
 		Enemy.setDefaultAI(1+8);
+		v=1200;
 		break;
 	case elvl[11]:
 		Enemy.set("ポイズンスライム", 280,120,70, 65,155, 65, 0, 65,185,
 				[function(){var that=Enemy;that.message=[that.name+"のポイズンアタック!",that.Attack(1.5),that.Tuika15(1,"う、苦しい……")];}]);
 		Enemy.setDefaultAI(1+64);
+		v=1100;
 		break;
 	case elvl[12]:
 		Enemy.set("ブラッドヴァム", 300,130,70, 65,155, 65, 0, 65,205,
 				[function(){var that=Enemy; that.isHPdrain=true; that.message=[that.name+"の吸血!",that.Attack(1.5),that.Drain];} ,
 				 function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
 		Enemy.setDefaultAI(64);
+		v=1303;
 		break;
 	case elvl[13]:
 		Enemy.set("クマー", 350,150,80, 80,20, 40, 40, 0,230,
 				[function(){var that=Enemy; that.message=[that.name+"は怪力を出して攻撃!",that.Attack(2)];}]);
 		Enemy.setDefaultAI(1);
+		v=1402;
 		break;
 	case elvl[14]:
 		Enemy.set("ライトニングヴァム", 400,150,85, 65,0, 65, 155, 65,250,
 				[function(){var that=Enemy; that.message=[that.name+"は口から光線を出した!",that.Attack(1.5),that.Hirumi()];} ,
 				 function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
 		Enemy.setDefaultAI(2);
+		v=1506;
 		break;
 	case elvl[15]:
 		Enemy.set("サンドバグ", 500,160,250, 80,60, 20, 40, 100,280,
 				[function(){var that=Enemy; that.message=[that.name+"のマッドショット!",that.Attack(1.5),that.Hirumi()];} ,
 				 function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
 		Enemy.setDefaultAI(1);
+		v=1603;
 		break;
 	case elvl[16]:
 		Enemy.set("猛毒の魔界草", 600,180,250, 60,150, 150, 0, 0,310,
 				[function(){var that=Enemy; that.message=[that.name+"は毒の刺を飛ばした!",that.Attack(1.3),"毒で守りのオーラが侵食された!",that.downD];}]);
 		Enemy.setDefaultAI(2+8+128);
+		v=1707;
 		break;
 	case elvl[17]:
 		Enemy.set("サンドスネーク", 700,200,250, 70,50, 10, 20, 90,330,
 				[function(){var that=Enemy; that.message=[that.name+"のマッドショット!",that.Attack(1.5),that.Hirumi()];} ,
 				 function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
 		Enemy.setDefaultAI(1);
+		v=1806;
 		break;
 	case elvl[18]:
 		Enemy.set("光の戦士", 700,160,100, 65,0, 65, 155, 65,360,
 				[function(){var that=Enemy; that.message=[that.name+"のレーザー光線!",that.Attack(1.5),that.Hirumi()];} ,
 				 function(){var that=Enemy;that.message=[that.name+"は剣で斬りかかってきた!",that.Attack(2.5)];}]);
 		Enemy.setDefaultAI(4+128);
+		v=1904;
 		break;
 	case elvl[19]:
 		Enemy.set("シロークマ", 800,180,100, 60,0, 60, 120, 30,400,
 				[function(){var that=Enemy; that.message=[that.name+"は怪力を出して攻撃!",that.Attack(2)];}]);
 		Enemy.setDefaultAI(4);
+		v=1406;
 		break;
 	case elvl[20]:
 		Enemy.set("スーパースライム", 1500,120,70, 60,40, 160, 80, 0,440,
 				[function(){var that=Enemy; that.message=[that.name+"はのしかかってきた!",that.Attack(1.2),that.Hirumi()];}]);
 		Enemy.setDefaultAI(32+64);
+		v=2003;
 		break;
 	case elvl[21]:
 		Enemy.set("ポイズンスネーク", 1000,220,270, 50,150, 30, 0, 50,490,
 				[function(){var that=Enemy; that.message=[that.name+"は毒のきばで噛みついた!",that.Attack(1.5),that.Tuika30(1,"毒が体に回って苦しい……。")];}]);
 		Enemy.setDefaultAI(8+16);
+		v=2109;
 		break;
 	case elvl[22]:
 		Enemy.set("ウチュークマ", 1000,200,130, 60,0, 60, 120, 30,530,
 				[function(){var that=Enemy; that.message=[that.name+"は怪力を出して攻撃!",that.Attack(2)];}]);
 		Enemy.setDefaultAI(32);
+		v=1416;
 		break;
 	case elvl[23]:
 		Enemy.set("ヴォルスネーク", 1500,250,300, 50,50, 0, 30, 150,580,
 				[function(){var that=Enemy; that.message=[that.name+"は炎のきばで噛みついた!",that.Attack(1.6),that.Tuika30(0,"熱い!")];},
-				 function(){var that=Enemy; that.message=[that.name+"は噛みついて体力を吸い取った!",that.Attack(2),that.Drain];},
+				 function(){var that=Enemy; that.message=[that.name+"は噛みついて体力を吸い取った!",that.Attack(1.5),that.Drain];},
 				 ]);
 		Enemy.setDefaultAI(4);
+		v=2209;
 		break;
 	case elvl[24]:
 		Enemy.set("ヘルスネーク", 2000,250,300, 90,80, 30, 20, 80,630,
-				[function(){var that=Enemy; that.message=[that.name+"は炎のきばで噛みついた!",that.Attack(1.6),that.Tuika30(0,"熱い!")];},
-				 function(){var that=Enemy; that.message=[that.name+"は噛みついて体力を吸い取った!",that.Attack(2),that.Drain];},
+				[function(){var that=Enemy; that.message=[that.name+"はマグマのきばで噛みついた!",that.Attack(1.6),that.Tuika30(1,"超熱い!")];},
+				 function(){var that=Enemy; that.message=[that.name+"は噛みついて体力を吸い取った!",that.Attack(1.5),that.Drain];},
 				 ]);
-		Enemy.setDefaultAI(4);
+		Enemy.setDefaultAI(32+8+128);
+		v=2309;
 		break;
 	case elvl[25]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ダークナイト", 2500,100,400, 50,150, 50, 0, 50,700,
+				[function(){var that=Enemy; that.message=[that.name+"のダークスラッシュ!",that.Attack(1.5),that.Hirumi(1)];} ,
+					 function(){var that=Enemy;that.message=[that.name+"は剣で斬りかかってきた!",that.Attack(2.5)];}]);
+		Enemy.setDefaultAI(4+8+128);
+		v=704;
 		break;
 	case elvl[26]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ダークマー", 2500,230,200, 60,160, 60, 0, 30,750,
+				[function(){var that=Enemy; that.message=[that.name+"は怪力を出して攻撃!",that.Attack(2)];},
+				 function(){var that=Enemy; that.message=[that.name+"は闇の力を込めて攻撃した!",that.Attack(1.6),that.Hirumi(1)];},
+				 function(){var that=Enemy; that.message=[that.name+"の謎のパワーで体力を吸収した!",that.Attack(1.5),that.Drain];},
+				]);
+		Enemy.setDefaultAI(2+4+64);
+		v=2416;
 		break;
 	case elvl[27]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("光の魔導師", 3000,200,200, 50,0, 50, 150, 50,850,
+				[function(){var that=Enemy; that.message=[that.name+"の光の波動!",that.Attack(1.5),that.Hirumi(1)];} ,
+					 function(){var that=Enemy;that.message=[that.name+"は雷を落とした!",that.Attack(2.5)];}]);
+		Enemy.setDefaultAI(2+4+128);
+		v=804;
 		break;
 	case elvl[28]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ドラゴン", 4000,250,300, 50,50, 0, 50, 150,1000,
+				[function(){var that=Enemy; that.message=[that.name+"のファイアブレス!",that.Attack(1.5),that.Tuika15(1,"熱い!")];} ,
+					 function(){var that=Enemy;that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}]);
+		Enemy.setDefaultAI(4+64);
+		v=2510;
 		break;
-	case elvl[29]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+	case elvl[29]:Enemy.set("アイスドラゴン", 5000,300,150, 50,50, 150, 50, 0,1500,
+			[function(){var that=Enemy; that.message=[that.name+"の吹雪!",that.Attack(1.3),that.Hirumi(1)];},
+			 function(){var that=Enemy; that.message=[that.name+"は噛みついて体力を吸い取った!",that.Attack(1.5),that.Drain];},
+			 function(){var that=Enemy; that.message=[that.name+"の凍える波動!",that.Attack(1.3),function(){savedata.mp=~~(savedata.mp/2); return savedata.name+"のMPが半分になった"}];},
+			function(){var that=Enemy; that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}
+			]);
+		Enemy.setDefaultAI(4+64+128);
+		v=2610;
 		break;
 	case elvl[30]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("サンダードラゴン", 6500,330,200, 50,0, 50, 150, 50,3000,
+				[function(){var that=Enemy; that.message=[that.name+"のしびれる息!",that.Attack(1.3),that.Hirumi(1)];},
+				 function(){var that=Enemy; that.message=[that.name+"は噛みついて体力を吸い取った!",that.Attack(1.5),that.Drain];},
+				 function(){var that=Enemy; that.message=[that.name+"は雷を落とした!",that.Attack(2.5)];},
+				function(){var that=Enemy; that.message=[that.name+"は噛みついた!",that.Attack(1.8)];}
+				]);
+			Enemy.setDefaultAI(32+64+128);
+			v=2710;
 		break;
 	case elvl[31]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ヘルビースト", 10000,400,10, 2,2, 2, 2, 2,4500,
+				[function(){var that=Enemy; that.message=[that.name+"は怪力を出して攻撃!",that.Attack(2)];},
+				 function(){var that=Enemy; that.message=[that.name+"の体当たり!",that.Attack(2.6),function(){var v=~~(Enemy.maxhp*0.1); if(v>=Enemy.hp){v=Enemy.hp-1;}Enemy.hp-=v; return that.name+"は反動で"+v+"ダメージ受けた!";}];},
+				 function(){var that=Enemy; that.message=[that.name+"は力のオーラを強化した!",that.upA(),"さらに追撃!",that.Attack(1)];},
+				 function(){var that=Enemy; that.message=[that.name+"は守りのオーラを侵食してきた!",that.downD(),"さらに追撃!",that.Attack(1)];}
+				]);
+		Enemy.setDefaultAI();
+		v=2805;
 		break;
 	case elvl[32]:
-		Enemy.set("レッドスライム", 40, 10, 20,20, 60, 130, 60, 20,4, []);
-		Enemy.setDefaultAI(1);
+		Enemy.set("ダークドラゴン", 10000,360,250, 50,150, 50, 0, 50,5000,
+				[function(){var that=Enemy; that.message=[that.name+"のダークブレス!",that.Attack(1.3),that.Hirumi(1)];},
+				 function(){var that=Enemy; that.message=[that.name+"は噛みついて体力を吸い取った!",that.Attack(1.5),that.Drain];},
+				 function(){var that=Enemy; that.message=[that.name+"は重力で"+savedata.name+"を引き寄せて踏みつけた!",that.Attack(2.5)];},
+				function(){var that=Enemy; that.message=[that.name+"は噛みついた!",that.Attack(1.8)];},
+				function(){var that=Enemy; that.message=[that.name+"は力のオーラを強化した!",that.upA(),"さらに追撃!",that.Attack(1)];},
+				 function(){var that=Enemy; that.message=[that.name+"は守りのオーラを侵食してきた!",that.downD(),"さらに追撃!",that.Attack(1)];}
+				]);
+			Enemy.setDefaultAI(32+64+128);
+			v=2910;
 		break;
 	}
 	console.log(Enemy);
 	SuperPushScene(SentouScene(v,x));
 };
 
+//Allって書いてあるけどField
 var MagicActiveAllFalse=function(){
-	for(var i = 0, is = isMagicActive, len = is.length ; i<len ; i++) is[i] = 0;
+	for(var i=0, is=isMagicActive, arr=gakuhus, len=arr.length ;i<len;i++)	{
+		if(arr[i].canField)is[i]=0;
+	}
 };
 
 var MagicActiveSentouFalse=function(){
@@ -2686,7 +2841,7 @@ var isSentouScene=false;
 
 //戦闘シーン
 var SentouScene=function(id,x,y){
-	MagicActiveSentouFalse();
+	if(!savedata.isQuickSM)MagicActiveSentouFalse();
 	var s=new Scene();
 	isSentouScene=true;
 	sentou=s;
@@ -2924,8 +3079,8 @@ var TuyosaScene=function(){
 	" <BR>最大HP : "+sv.maxhp+
 	" <BR>最大MP : "+sv.maxmp+
 	" <BR>攻撃力 : "+sv.atk+
-	" <BR>防御力 : "+sv.def+
-	" <BR> <BR>経験値あと "+(sv.expTable-sv.exp)+" <BR>でレベルアップ";
+	" <BR>防御力 : "+sv.def;
+	l.text+=sv.level>=100?"レベルMAX!":" <BR> <BR>経験値あと "+(sv.expTable-sv.exp)+" <BR>でレベルアップ";
 	s.addChild(l);
 	s.onenterframe=function(){
 		if(game.input.touch.start)game.popScene();
@@ -3082,7 +3237,7 @@ var Player = enchant.Class.create(Sprite, {
                             this.tl.moveTo(_x, _y, 4).then(function(){
                                 this.animCount = 0;
                                 this.jyoutai = jyo.Idle;
-                                if(this.canSentou)if(Math.random()<0.05)EnemySet();
+                                if(this.canSentou)if(Math.random()<0.10)EnemySet();
 
                             });
 
@@ -3112,8 +3267,8 @@ var Player = enchant.Class.create(Sprite, {
     findEnemies : function(x, y){
         var out = [];
         this.collideWith.forEach(function(item){
-            if(item.x < x && x < item.x + item.width &&
-                item.y < y && y < item.y + item.height){
+            if(item.x < x && x < item.x + item.width*item.scaleX &&
+                item.y < y && y < item.y + item.height*item.scaleY){
                 out[out.length] = item;
             }
         });
@@ -3224,18 +3379,187 @@ var EnemyImage = enchant.Class.create(enchant.Sprite, {
   initialize : function(id,x,y){
       enchant.Sprite.call(this, 32, 32);
       var image = new Surface(32, 32);
-      if(id<700){
-    	  image.draw(game.assets['images/chara6.png'], ((id % 9)+0.1) * 32, (~~(id/9)+0.2)*32, 28, 28, 0, 0, 28, 28);
+      this.x=160;this.y=160;
+      if(id<100){
+    	  image.draw(game.assets['images/chara6.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
+      }else if(id<200 && id>=100){
+    	  id-=100;
+    	  image.draw(game.assets['images/chara6.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  ColorSwap(image.context,28,28,0);
+      }else if(id<300 && id>=200){
+    	  id-=200;
+    	  image.draw(game.assets['images/chara6.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  ColorSwap(image.context,28,28,2);
+      }else if(id<400 && id>=300){
+    	  id-=300;
+    	  image.draw(game.assets['images/chara6.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  ColorSwap(image.context,28,28,1);
+      }else if(id<500 && id>=400){
+    	  id-=400;
+          enchant.Sprite.call(this, 48, 48);
+          image = new Surface(48, 48);
+    	  image.draw(game.assets['images/monster/monster3.gif'], ((id % 4)+0.1) * 48, (~~(id/4))*48, 44, 44, 0, 0, 44, 44);
+    	  x=x*32/48;
+    	  this.x=160;this.y=160;
+      }else if(id<600 && id>=500){
+    	  id-=500;
+    	  image.draw(game.assets['images/chara6.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  ColorOnaji(image.context,28,28,4);
+      }else if(id<700 && id>=600){
+    	  id-=600;
+          enchant.Sprite.call(this, 64, 64);
+          image = new Surface(64, 64);
+    	  image.draw(game.assets['images/monster/monster6.gif'], ((id % 4)+0.1) * 64, (~~(id/4))*64, 64, 64, 0, 0, 64, 64);
+    	  x=x*32/64;
+    	  this.x=160;this.y=160-320/6;
       }else if(id<800 && id>=700){
     	  id-=700;
-    	  image.draw(game.assets['images/chara7.png'], ((id % 9)+0.1) * 32, (~~(id/9)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  image.draw(game.assets['images/chara7.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
       }else if(id<900 && id>=800){
     	  id-=800;
-    	  image.draw(game.assets['images/chara6.png'], ((id % 9)+0.1) * 32, (~~(id/9)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  image.draw(game.assets['images/chara6.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
     	  ColorOnaji(image.context,28,28,3);
-      }
+      }else if(id<1000 && id>=900){
+    	  id-=900;
+    	  image.draw(game.assets['images/chara6.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  ColorChange(image.context,28,28,[255,0,0],[0,1,1]);
+      }else if(id<1100 && id>=1000){
+    	  id-=1000;
+    	  image.draw(game.assets['images/chara6.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  ColorChange(image.context,28,28,[0,0,255],[1,1,0]);
+      }else if(id<1200 && id>=1100){
+    	  id-=1100;
+    	  image.draw(game.assets['images/chara6.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  ColorSwap(image.context,28,28,0);
+    	  ColorOnaji(image.context,28,28,4);
+      }else if(id<1300 && id>=1200){
+    	  id-=1200;
+    	  image.draw(game.assets['images/chara6.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  ColorSwap(image.context,28,28,0);
+    	  ColorOnaji(image.context,28,28,3);
+      }else if(id<1400 && id>=1300){
+    	  id-=1300;
+    	  enchant.Sprite.call(this, 48, 48);
+          image = new Surface(48, 48);
+    	  image.draw(game.assets['images/monster/monster3.gif'], ((id % 4)+0.1) * 48, (~~(id/4))*48, 44, 44, 0, 0, 44, 44);
+    	  x=x*32/48;
+    	  this.x=160;this.y=160;
+    	  ColorChange(image.context,44,32,[69,0,0],[1,1,1]);
+      }else if(id<1500 && id>=1400){
+    	  id-=1400;
+    	  image.draw(game.assets['images/space3.png'], ((id % 5)+0.1) * 32, (~~(id/5))*32, 32, 32, 0, 0, 32, 32);
+    	  this.y-=320/6;
+      }else if(id<1600 && id>=1500){
+    	  id-=1500;
+    	  enchant.Sprite.call(this, 48, 48);
+          image = new Surface(48, 48);
+    	  image.draw(game.assets['images/monster/monster3.gif'], ((id % 4)+0.1) * 48, (~~(id/4))*48, 44, 44, 0, 0, 44, 44);
+    	  x=x*32/48;
+    	  this.x=160;this.y=160;
+    	  ColorChange(image.context,44,32,[4,4,3],[3,3,3]);
+      }else if(id<1700 && id>=1600){
+    	  id-=1600;
+          enchant.Sprite.call(this, 64, 64);
+          image = new Surface(64, 64);
+    	  image.draw(game.assets['images/monster/monster2.gif'], ((id % 4)) * 64, (~~(id/4))*64, 64, 64, 0, 0, 64, 64);
+    	  x=x*32/64;
+    	  this.x=160-30;this.y=160-320/6;
+      }else if(id<1800 && id>=1700){
+    	  id-=1700;
+          enchant.Sprite.call(this, 64, 64);
+          image = new Surface(64, 64);
+    	  image.draw(game.assets['images/monster/monster6.gif'], ((id % 4)+0.1) * 64, (~~(id/4))*64, 64, 64, 0, 0, 64, 64);
+    	  x=x*32/64;
+    	  this.x=160;this.y=160-320/6;
+    	  ColorChange(image.context,64,64,[1,3,1],[3,4,3]);
+      }else if(id<1900 && id>=1800){
+    	  id-=1800;
+          enchant.Sprite.call(this, 80, 80);
+          image = new Surface(80, 80);
+    	  image.draw(game.assets['images/monster/monster5.gif'], ((id % 4)) * 80, (~~(id/4))*80, 80, 80, 0, 0, 80, 80);
+    	  x=x*32/80;
+    	  this.x=160-30;this.y=160-320/6;
+      }else if(id<2000 && id>=1900){
+    	  id-=1900;
+    	  image.draw(game.assets['images/chara5.png'], ((id % 6)+0.1) * 32, (~~(id/6)+0.2)*32, 28, 28, 0, 0, 28, 28);
+    	  ColorChange(image.context,28,28,[2,2,2],[3,3,3]);
+      }else if(id<2100 && id>=2000){
+    	  id-=2000;
+    	  enchant.Sprite.call(this, 48, 48);
+          image = new Surface(48, 48);
+    	  image.draw(game.assets['images/monster/monster4.gif'], ((id % 4)+0.1) * 48, (~~(id/4))*48, 44, 44, 0, 0, 44, 44);
+
+    	  this.x=160;this.y=160-60;
+      }else if(id<2200 && id>=2100){
+    	  id-=2100;
+          enchant.Sprite.call(this, 80, 80);
+          image = new Surface(80, 80);
+    	  image.draw(game.assets['images/monster/monster5.gif'], ((id % 4)) * 80, (~~(id/4))*80, 80, 80, 0, 0, 80, 80);
+    	  x=x*32/80;
+    	  this.x=160-30;this.y=160-320/6;
+    	  ColorChange(image.context,80,80,[0,2,0],[1,4,1]);
+      }else if(id<2300 && id>=2200){
+    	  id-=2200;
+          enchant.Sprite.call(this, 80, 80);
+          image = new Surface(80, 80);
+    	  image.draw(game.assets['images/monster/monster5.gif'], ((id % 4)) * 80, (~~(id/4))*80, 80, 80, 0, 0, 80, 80);
+    	  x=x*32/80;
+    	  this.x=160-30;this.y=160-320/6;
+    	  ColorChange(image.context,80,80,[4,0,0],[3,1,1]);
+      }else if(id<2400 && id>=2300){
+    	  id-=2300;
+          enchant.Sprite.call(this, 80, 80);
+          image = new Surface(80, 80);
+    	  image.draw(game.assets['images/monster/monster5.gif'], ((id % 4)) * 80, (~~(id/4))*80, 80, 80, 0, 0, 80, 80);
+    	  x=x*32/80;
+    	  this.x=160-30;this.y=160-320/6;
+    	  ColorChange(image.context,80,80,[1.5,3,3],[3,4,4]);
+      }else if(id<2500 && id>=2400){
+    	  id-=2400;
+    	  image.draw(game.assets['images/space3.png'], ((id % 5)+0.1) * 32, (~~(id/5))*32, 32, 32, 0, 0, 32, 32);
+    	  this.y-=320/6;
+    	  ColorChange(image.context,80,80,[1,0,1],[4,0,4]);
+      }else if(id<2600 && id>=2500){
+    	  id-=2500;
+			enchant.Sprite.call(this, 80, 80);
+			var image = new Surface(80, 80);
+	  	  image.draw(game.assets['images/monster/bigmonster1.gif'], (id % 4) * 80, ~~(id/4)*80, 80, 80, 0, 0, 80, 80);
+	  	  x=x*32/80;
+    	  this.x=160-60;this.y=160-320/6;
+      }else if(id<2700 && id>=2600){
+    	  id-=2600;
+			enchant.Sprite.call(this, 80, 80);
+			var image = new Surface(80, 80);
+	  	  image.draw(game.assets['images/monster/bigmonster1.gif'], (id % 4) * 80, ~~(id/4)*80, 80, 80, 0, 0, 80, 80);
+	  	  x=x*32/80;
+  	  this.x=160-60;this.y=160-320/6;
+	  ColorSwap(image.context,80,80,1);
+    } else if(id<2800 && id>=2700){
+    	  id-=2700;
+			enchant.Sprite.call(this, 80, 80);
+			var image = new Surface(80, 80);
+	  	  image.draw(game.assets['images/monster/bigmonster1.gif'], (id % 4) * 80, ~~(id/4)*80, 80, 80, 0, 0, 80, 80);
+	  	  x=x*32/80;
+  	  this.x=160-60;this.y=160-320/6;
+	  ColorOnaji(image.context,80,80,3);
+    }else if(id<2900 && id>=2800){
+  	  id-=2800;
+			enchant.Sprite.call(this, 80, 80);
+			var image = new Surface(80, 80);
+	  	  image.draw(game.assets['images/monster/bigmonster2.gif'], (id % 4) * 80, ~~(id/4)*80, 80, 80, 0, 0, 80, 80);
+	  	  x=x*32/80;
+	  this.x=160-60;this.y=160-320/6;
+	  }else if(id<3000 && id>=2900){
+	  	  id-=2900;
+			enchant.Sprite.call(this, 80, 80);
+			var image = new Surface(80, 80);
+	  	  image.draw(game.assets['images/monster/bigmonster1.gif'], (id % 4) * 80, ~~(id/4)*80, 80, 80, 0, 0, 80, 80);
+	  	  x=x*32/80;
+	  this.x=160-60;this.y=160-320/6;
+	  ColorOnaji(image.context,80,80,4);
+	  }
+
       this.image = image;
-      this.x=160;this.y=160;
       if(y!==undefined)this.setScale(x,y);
       else if(x!==undefined)this.setScale(x);
       this.c=0;
@@ -3252,51 +3576,107 @@ var EnemyImage = enchant.Class.create(enchant.Sprite, {
 
 //NPC
 var NPC = enchant.Class.create(enchant.Sprite, {
-  initialize : function(id,text,x,y){
-      enchant.Sprite.call(this, 32, 32);
-      var image = new Surface(32, 32);
-      if(id<100){
-      	image.draw(game.assets['images/chara0.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
-      }else if(id>=100 && id<200){
-      	id-=100;
-      	image.draw(game.assets['images/chara5.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
-      }else if(id>=200 && id<300){
-      	id-=200;
-      	image.draw(game.assets['images/chara6.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
-      }else if(id>=300 && id<400){
-    	id-=300;
-      	image.draw(game.assets['images/chara7.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
-      }else if(id>=400 && id<500){
-    	  id-=400;
-    	  image.draw(game.assets['images/chara6.png'], (id % 6) * 32, ~~(id/6)*32, 32, 32, 0, 0, 32, 32);
-    	  ColorOnaji(image.context,32,32,3);
-      }
-      this.image = image;
-      this.talktext=text || ["……。"];
-      this.pl=player;
-      this.i=game.input;
-      if(y!==undefined)this.setPosition(x, y);
-      this.pl.collideWith.push(this);
-  },
-  setPosition : function(x, y){
-      this.x = x * 16 - 8;
-      this.y = y * 16 - 16;
-      return this;
-  },
-  onenterframe : function(){
-      if(this.startTalk()&&(this.pl.canWalk)){
-      	MessageWindowCt(this.talktext);
-      	if(this.ef)scene.mswin.endFunc2=this.ef;
-      }
-  },
-  startTalk : function(){
-      // プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
-      return  (this.pl.x == this.x && this.pl.y == this.y - 32 && this.i.down) ||
-              (this.pl.x == this.x + 16 && this.pl.y == this.y && this.i.left) ||
-              (this.pl.x == this.x - 16 && this.pl.y == this.y && this.i.right) ||
-              (this.pl.x == this.x && this.pl.y == this.y + 16 && this.i.up);
-  }
+	initialize : function(id,text,x,y){
+		enchant.Sprite.call(this, 32, 32);
+		var image = new Surface(32, 32);
+		if(id<100){
+			image.draw(game.assets['images/chara0.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
+		}else if(id>=100 && id<200){
+			id-=100;
+			image.draw(game.assets['images/chara5.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
+		}else if(id>=200 && id<300){
+			id-=200;
+			image.draw(game.assets['images/chara6.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
+		}else if(id>=300 && id<400){
+		id-=300;
+			image.draw(game.assets['images/chara7.png'], (id % 9) * 32, ~~(id/9)*32, 32, 32, 0, 0, 32, 32);
+		}else if(id>=400 && id<500){
+		  id-=400;
+		  image.draw(game.assets['images/chara6.png'], (id % 6) * 32, ~~(id/6)*32, 32, 32, 0, 0, 32, 32);
+		  ColorOnaji(image.context,32,32,3);
+		}else if(id>=500 && id<600){
+		  id-=500;
+			enchant.Sprite.call(this, 80, 80);
+			var image = new Surface(80, 80);
+	  	  image.draw(game.assets['images/monster/bigmonster1.gif'], (id % 4) * 80, ~~(id/4)*80, 80, 80, 0, 0, 80, 80);
+	  	this.originX=1;
+	  	this.originY=1;
+	  	  this.scaleX=0.4;
+	  	  this.scaleY=0.4;
+	    }else if(id>=600 && id<700){
+		  id-=600;
+			enchant.Sprite.call(this, 80, 80);
+			var image = new Surface(80, 80);
+	  	  image.draw(game.assets['images/monster/bigmonster1.gif'], (id % 4) * 80, ~~(id/4)*80, 80, 80, 0, 0, 80, 80);
+	  	  ColorSwap(image.context,80,80,1);
+	  	  this.originX=1;
+	  	this.originY=1;
+	  	  this.scaleX=0.4;
+	  	  this.scaleY=0.4;
+	    }
+		this.image = image;
+		this.talktext=text || ["……。"];
+		this.pl=player;
+		this.i=game.input;
+		if(y!==undefined)this.setPosition(x, y);
+		this.pl.collideWith.push(this);
+	},
+	setPosition : function(x, y){
+	    this.x = x * 16 - 8;
+	    this.y = y * 16 - 16;
+	    return this;
+	},
+	onenterframe : function(){
+	    if(this.startTalk()&&(this.pl.canWalk)){
+	    	MessageWindowCt(this.talktext);
+	    	if(this.ef)scene.mswin.endFunc2=this.ef;
+	    }
+	},
+	startTalk : function(){
+	    // プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
+	    return  (this.pl.x == this.x && this.pl.y == this.y - 32 && this.i.down) ||
+	            (this.pl.x == this.x + 16 && this.pl.y == this.y && this.i.left) ||
+	            (this.pl.x == this.x - 16 && this.pl.y == this.y && this.i.right) ||
+	            (this.pl.x == this.x && this.pl.y == this.y + 16 && this.i.up);
+	}
 });
+
+
+var Iwa = enchant.Class.create(enchant.Sprite, {
+    initialize : function(x,y){
+        enchant.Sprite.call(this, 16, 16);
+        var image = new Surface(16, 16);
+        image.draw(game.assets['images/map1.png'], 12 * 16, 0*16, 16, 16, 0, 0, 16, 16);
+        this.image = image;
+        if(y!==undefined)this.setPosition(x, y);
+        this.pl=player;
+        this.i=game.input;
+        this.pl.collideWith.push(this);
+    },
+    setPosition : function(x, y){
+        this.x = x * 16 ;
+        this.y = y * 16 ;
+        return this;
+    },
+    onenterframe : function(){
+        if(this.startTalk()&&(this.pl.canWalk)){
+        	if(isIwakudaki){
+    			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
+    			stage.removeChild(this);
+        	}else{
+        		MessageWindowCt(["岩が邪魔で通れない"]);
+        	}
+        }
+    },
+    startTalk : function(){
+    	// プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
+        return  (this.pl.x == this.x - 8 && this.pl.y == this.y - 32 && this.i.down) ||
+                (this.pl.x == this.x + 8 && this.pl.y == this.y - 16 && this.i.left) ||
+                (this.pl.x == this.x - 24 && this.pl.y == this.y -16  && this.i.right) ||
+                (this.pl.x == this.x - 8 && this.pl.y == this.y  && this.i.up);
+    }
+});
+
 
 
 //宝箱
@@ -3322,15 +3702,39 @@ var Takara = enchant.Class.create(enchant.Sprite, {
 
         if(this.isItemGet()&&(this.pl.canWalk)){
 			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
-			MessageWindowCt([GAKUHU[this.item].name+"の楽譜を手に入れた!"]);
-			if(this.ef)scene.mswin.endFunc2=this.ef;
-			var i=savedata.gakuhu.length;
-			savedata.gakuhu[i]=this.item;
-			game.pushScene(AutoPianoScene(i));
+			if(this.item==="fm"||this.item==="sm"){
+				if(this.item==="fm"){
+					MessageWindowCt(["移動魔法の書を手に入れた!","別のフロアに移動しても、フィールドの魔法が無効化されなくなった!"]);
+					savedata.isQuickFM=true;
+				}else if(this.item==="sm"){
+					MessageWindowCt(["戦闘魔法の書を手に入れた!","戦闘が終わっても、戦闘中の魔法が無効化されなくなった!"]);
+					savedata.isQuickSM=true;
+				}
+			}
+			else{
+				MessageWindowCt([GAKUHU[this.item].name+"の楽譜を手に入れた!"]);
+				if(this.ef)scene.mswin.endFunc2=this.ef;
+				var i=savedata.gakuhu.length;
+				savedata.gakuhu[i]=this.item;
+				game.pushScene(AutoPianoScene(i));
+			}
 			stage.removeChild(this);
         }
     },
     checkData:function(){
+    	if(this.item==="fm"||this.item==="sm"){
+			if(this.item==="fm"){
+				if(savedata.isQuickFM){
+	    			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
+	    			stage.removeChild(this);
+				}
+			}else if(this.item==="sm"){
+				if(savedata.isQuickSM){
+	    			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
+	    			stage.removeChild(this);
+				}
+			}
+		}
     	for(var i=0;i<savedata.gakuhu.length;i++){
     		if(this.item===savedata.gakuhu[i]){
     			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
@@ -3345,6 +3749,66 @@ var Takara = enchant.Class.create(enchant.Sprite, {
                 (this.pl.x == this.x - 24 && this.pl.y == this.y -16  && this.i.right) ||
                 (this.pl.x == this.x - 8 && this.pl.y == this.y  && this.i.up);
     }
+});
+
+
+
+//すごい宝箱
+var SuperTakara = enchant.Class.create(enchant.Sprite, {
+  initialize : function(x,y){
+      enchant.Sprite.call(this, 16, 16);
+      var image = new Surface(16, 16);
+      image.draw(game.assets['images/map1.png'], 11 * 16, 16, 16, 16, 0, 0, 16, 16);
+      this.image = image;
+      if(y!==undefined)this.setPosition(x, y);
+      this.pl=player;
+      this.i=game.input;
+      this.pl.collideWith.push(this);
+      this.isTakara=true;
+      this.gakuhuList=["kirakira","kanki","shuku","noroi","koori","honoo","hikari","yami","menue","zenon"];
+  },
+  setPosition : function(x, y){
+      this.x = x * 16 ;
+      this.y = y * 16 ;
+      return this;
+  },
+  onenterframe : function(){
+      if(this.isItemGet()&&(this.pl.canWalk)){
+    	  	savedata[this.x+","+this.y]=true;
+			this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
+			var i=this.checkList();
+			console.log(i);
+			var ga=this.gakuhuList[i];
+			MessageWindowCt([GAKUHU[ga].name+"の楽譜を手に入れた!"]);
+			if(this.ef)scene.mswin.endFunc2=this.ef;
+			i=savedata.gakuhu.length;
+			savedata.gakuhu[i]=ga;
+			game.pushScene(AutoPianoScene(i));
+			stage.removeChild(this);
+      }
+  },
+  checkData:function(){
+	  if(savedata[this.x+","+this.y]){
+		this.pl.collideWith.splice(this.pl.collideWith.indexOf(this),1);
+		stage.removeChild(this);
+	  }
+  },
+  checkList:function(v){
+	  v=v||0;
+	  console.log(v);
+	  if(!aruGakuhu(this.gakuhuList[v])){
+		  return v;
+	  }else{
+		  return this.checkList(v+1);
+	  }
+  },
+  isItemGet : function(){
+      // プレイヤーが上にいるとき, 右にいるとき, 左にいるとき, 下にいるとき
+      return  (this.pl.x == this.x - 8 && this.pl.y == this.y - 32 && this.i.down) ||
+              (this.pl.x == this.x + 8 && this.pl.y == this.y - 16 && this.i.left) ||
+              (this.pl.x == this.x - 24 && this.pl.y == this.y -16  && this.i.right) ||
+              (this.pl.x == this.x - 8 && this.pl.y == this.y  && this.i.up);
+  }
 });
 
 //看板
@@ -3700,6 +4164,7 @@ var FieldAdd=function(s){
 	var pad = new Pad();
     pad.x = 5;
     pad.y = 215;
+    pad.opacity=0.5;
     s.addChild(pad);
 
 
@@ -3720,6 +4185,8 @@ var FieldAdd=function(s){
     };
     s.addChild(s.stwin);
     s.addChild(s.stwin.label);
+    //s.stwin.opacity=0.5;
+    //s.stwin.label.opacity=0.5;
 
 
     s.minigakuhu=new Sprite(30,30);
@@ -3739,6 +4206,8 @@ var FieldAdd=function(s){
     };
     s.addChild(s.minigakuhu);
 
+    //s.minigakuhu.opacity=0.5;
+
     s.miniken=new Sprite(30,30);
     s.miniken.image=new Surface(30,30);
     for(var i=0;i<3;i++){
@@ -3754,6 +4223,8 @@ var FieldAdd=function(s){
     s.miniken.y=50;
     s.miniken.onenterframe=s.minigakuhu.onenterframe;
     s.addChild(s.miniken);
+
+    //s.miniken.opacity=0.5;
 
     s.mswin=WindowCreator(0,320-111,320,110);
     s.addChild(s.mswin);
@@ -3898,10 +4369,19 @@ window.onload = function() {
 		"piano/si.mp3",
 		"piano/do2.mp3",
 		"images/chara0.png",
+		"images/space3.png",
 		"images/chara5.png",
 		"images/chara6.png",
 		"images/chara7.png",
-		"images/map1.png");
+		"images/map1.png",
+		"images/monster/bigmonster1.gif",
+		"images/monster/bigmonster2.gif",
+		"images/monster/monster2.gif",
+		"images/monster/monster3.gif",
+		"images/monster/monster4.gif",
+		"images/monster/monster5.gif",
+		"images/monster/monster6.gif"
+	);
     game.onload = function() {
 	var scene = game.rootScene;
 	game.background="black";
